@@ -1375,6 +1375,7 @@ coverage prob
        [[file:mcmc.pdf]] mentioned 1/4 for high dim, 1/2 for dim 1 to 2
        try to adjust acceptance rate to 1/2
        not good on M4 foo4.4
+       rate->0.2 foo4.5
 ** TODO debug heterptlm3.f, correct right tuning and add ratesave tunesave, hetersave, add b~N(b, tune*(xtx)^-1(i))
 ** TODO check biometrika paper 
    - may apply to our model , think about it.
@@ -1389,6 +1390,7 @@ coverage prob
 * 2012-03-28
 ** Git
 *** DONE clean folder first [cance]
-*** TODO git push 
+*** DONE git push 
     add agenda.org, heterptlm.f, HeterPTlm.R
+*** TODO branch vector 
 ** check out Kozami 's paper 
