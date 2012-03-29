@@ -1,0 +1,1394 @@
+# Quantile Regression
+
+Research Diary
+* 2010-09-01 
+  paper reading , topic deciding
+* 2010-09-08
+    image / quantile regression
+* 2010-09-15
+    paper reading ( check function, lasso, penalized term)
+* 2010-09-22 
+    paper reading ( looking for copula method, further reading)
+* 2010-09-29 
+    copula + Reich problem 
+* 2010-10-06
+    1) check bootstrap ; quantile regression
+    2) check 2 papers in copula quantile regression (Bouye 2009) , estimation parts
+       Koenker (1996) and Chen (2006) 
+    3) consider (Bouye 2009) bivariate case -> n dim
+    4) consider contrasts m(Y1-Y2)
+    5) check Reich (2010) R code on his website , with copula
+* 2010-10-13
+    1) cancelled 
+    2) read three R code by Reich, may have a total review later
+* 2010-10-20
+    - cancelled
+    - Bouye 2009 is bivariate case
+* 2010-10-27
+    - Mike's grandma pass away
+    - check MCMC 
+    - Pitt, chan , kohn (2006) biometrika
+    - check gaussian copula
+    gaussian copula + gaussian marginal = ? \neq MVN
+    - check Song (2000) multi dispersion , gaussian copula
+    - how to sampling C, the correlation matrix in copula
+* 2010-11-3
+    - check Liu and Daniels, 2006, JCGS, 
+    sampling a correlation matrix based on parameters expansion and reparameterization
+    - check Daniels and Parahmad (2009) JMVA 
+    partial autocorrelation to sample Correlation matrix (-1,1) 
+    - wishart prior would be too constraint
+* 2010-11-10
+    - Pi -> Rho has to bje recursive
+    - check MCMC book
+      G.Casella : ch1,2,7,8,9,10
+      Gamerman : ch 1-6
+    - revise my.pacf function, now reversible
+* 2010-11-17
+    - some question about casella's notes
+* 2010-11-24
+    thanksgiving , break
+* 2010-12-1
+    
+* 2011-01-12
+    write down whole previous thought
+    1. test Reich's code
+       simulation by self
+    2. write down likelihood w/ longitudinal w/ gaussian copula
+    3. MCMC with long using PACF method on correlation matrix
+
+* 2011-01-19
+    1. conditional settings with common correlation matrix
+    2. code it , runs well but slow
+    
+* 2011-01-26
+    1. reject the conditional settings with common R, since 
+       off diagonal correlation might be dominated by variance
+    2. thought about the Reich 's setting with marginal copula
+    3. code it but extremely slow
+    4. need to check how they converges/ mix
+    5. check Lavine (1992,? 94?) paper and Hansen 2006 JASA,
+       about Polya tree, quantile, multivariate settings
+    6. also use Google Scholar
+       
+* 2011-02-02
+    improve the code 0.6s /loop but mix not good (using calling C from R)
+    found funding for ENAR
+    heard his leaving (NCSU) ?
+    check paper lavine, hansen
+
+* 2011-02-09
+    try 100,000 loops 
+    check hanson and johnson (2002) paper 
+    check hanson, walker paper 
+    try ALD for base (predictive) distribution in polya tree
+
+* 2011-02-16
+    try 1000/500 sample size for FBQR with copula and check lag correlation
+    try ALD for base , code for polya tree
+
+* 2011-02-23
+    run simulation for 5 design and 4 models
+    deal with intercept problem
+    learn fortran
+    found Jara's code and paper, DPpackage, PTlm,
+    did some experiment, might not deal with other quantile, 
+    Jara might only deal with median (0 or nonzero)
+    compared lm method with Jara's, and myPT
+    test with heterogeinety y = x*0 + x* unif(0,1) , but didnot fit the model
+    assumption
+
+* 2011-03-15     
+    y = a + x*b + (1 (c) + x*d)*e 
+    where e ~ iid PT(mix)
+    explicit form of any quantile form
+    identifiability problem (see hanson, johnson(2002) regression with PT) ( Walker and Mallick (1999))
+
+* 2011-03-30
+    y = a + x*b + exp(c + x*d)*e 
+    without intercept(c) , then no identifiability problem, only need to constraint on median 0
+    - e ~ N(0,1) or N(0, sigma)
+    - e ~ PT(), mixture or fixed, 
+    code for them , and test
+
+* 2011-04-06
+    exp not good for nice form, so focus on 
+    y = a + x*b + (1 + x*d)*e
+    test heter model y = (1+x*d)*e
+    check DPpackage PTlmp.f etc file, check my pt likelihood is the same 
+    with DPpackage  # little different , may check detail later
+
+    for single y = sigma*N(0,1), # MCMC works
+    note MH= sum(ldnorm(canres)-ldnorm(res)+
+    log(sigma)-log(cansig))
+
+    test huge heter factor with normal: 
+
+    I found my previous likelihood of x1,...,xn is wrong, 
+    actually it should be f(x1,...,xn)=f(xn|xn-1,...,x1)*...*f(x2|x1)*f(x1)
+    while previously, I took f(x1,...xn)=f(x1|x1,...,xn)*...*f(xn|x1,...,xn)
+
+    so, could use Jara's loglik_unippt to get likelihood in my MCMC
+    
+    # jara'DPpackage is good for bimodel:
+    # y = x*b + e, e is bimodel
+    
+    # y = xb + x*gamma *N(1,1) 
+    # PTlm good for beta (testmyheterptlm.R) , but not good for gamma
+
+    # gamma seems to always prefer bigger
+    # guess may not estimate the variance for polya tree distribution
+
+    # back to y = x*b+exp(x*c)e , model , test if still larage variance problem
+
+    # X~unif, gamma pretty large
+    # X ~ norm, gamma  good
+
+    # mixing not good, check tuning from Reich
+
+* 2011-04-13
+** DONE permute ei to check exchangibility for loglik_unippt  # it doesnot change
+   CLOSED: [2011-04-18 Mon 19:42]
+** DONE test on homo model (myheterptlm.R)
+   CLOSED: [2011-04-18 Mon 22:39]
+   actually more for heter model
+** DONE check gamma*sigma , consider their product
+   CLOSED: [2011-04-18 Mon 20:18]
+   not exact as gamma,
+** DONE check loglik_unippt , if they update first level	      :level:
+   CLOSED: [2011-04-18 Mon 20:06]
+   it does update first level , *depend on mdzero*
+** DONE revise myheterptlm.R , update att each time # done
+   CLOSED: [2011-04-18 Mon 19:44]
+** TODO check MHrate when only small deviance on canbeta/cangamma
+** DONE check PTlm mixing # pretty good
+   CLOSED: [2011-04-18 Mon 19:44]
+** DONE revise myptlm.R  # done 
+   CLOSED: [2011-04-18 Mon 19:43]
+** DONE revise myheterptlm.R to update beta/gamma vector together # done
+   CLOSED: [2011-04-18 Mon 19:43]
+
+  
+   
+** DONE make a posterior quantile function for polya tree
+   CLOSED: [2011-04-18 Mon 22:56]
+** TODO check after myheterptlm, the posterior density of e
+   
+** TODO new problem : myheterptlm.R for X~N(2,1), not good for gamma, too large
+   actually when X~N(0,1), gamma too small
+** TODO check gamma*Phi^-1(tau) [true] =  estimated gamma*Phi^-1(tau)
+
+** DONE BQRiid X~N(2,1) e ~ N(0,1)
+   CLOSED: [2011-04-19 Tue 17:16]
+   1. homo model
+      beta is good: [1] 1.017670 1.959527 3.026009
+   2. heter model
+      > apply(fit1$beta[-(1:burn),],2,mean)
+      [1] 0.2112864 1.9139275 3.4354247
+      > apply(fit1$gamma[-(1:burn),],2,mean)
+      [1] 1.000000 3.711290 2.208914
+** DONE posterior myptlm2 X~N(2,1) e~N(0,1) # even 10k runs
+   CLOSED: [2011-04-19 Tue 19:58]
+   Homo model
+   > apply(foo2$beta[afterburn,],2,mean)
+   [1] 0.9638703 1.9451384 3.0343966
+   > mean(foo2$sigma[afterburn])
+   [1] 1.177481
+
+** DONE posterior myptlm2 X~N(2,1) e~N(3,1) # even 10k runs
+   CLOSED: [2011-04-19 Tue 19:58]
+   Homo model : good
+
+** DONE posterior myptlm2 X~U(2,3) e~N(3,1) # even 10k runs
+   CLOSED: [2011-04-19 Tue 19:58]
+   > apply(foo2$beta[afterburn,],2,mean)
+   [1] 4.588289 1.919516 2.806195
+
+** DONE posterior myptlm2 X~N(2,1), e~bimodel # 10k runs
+   CLOSED: [2011-04-19 Tue 19:58]
+   Homo model
+   ## > apply(foo2$beta[afterburn,],2,mean)
+   [1] 0.9239102 1.9320364 3.0096620
+   > mean(foo2$sigma[afterburn])
+   [1] 2.958015
+   residual plot good (obvious bimodel shape)
+
+
+** DONE try single myheterptlm2 w/o sigma , base is N(0,1)
+   CLOSED: [2011-04-19 Tue 19:58]
+   not good for gamma
+** TODO fix X'gamma > 0, by X ~ N(2,1) ? 
+
+** TODO revise loglik_unippt for tau other than 0.5, and use y = xb+e , e~PT(tau)
+
+** DONE try y = xb+exp(x*gamma)e, where X~N(2,1), look into gamma estimate # myheterptlm4.R
+   CLOSED: [2011-04-20 Wed 11:27]
+   beta good, but not with gamma, still too large problem
+   homo e~N(0,1)
+   > apply(foo2$beta[afterburn,],2,mean)
+   [1] 0.8030724 1.8966566 2.9205925
+   > apply(foo2$gamma[afterburn,],2,mean)
+   [1] 0.000000 5.150702 5.511493
+   > mean(foo2$sigma[afterburn])
+   [1] 0.008272906
+** DONE try y = x*b + (gamma0+x*gamma) e, where X~N(2,1), look into gamma estimates # myheterptlm3.R
+   even bad for homo+e~N(0,1)+X~N(2,1)
+   CLOSED: [2011-04-20 Wed 10:25]
+   > apply(foo2$beta[afterburn,],2,mean)
+   [1] 0.4457855 2.0384361 3.2306537
+   > apply(foo2$gamma[afterburn,],2,mean)
+   [1]  95.52856 126.36820 122.80139
+   > mean(foo2$sigma[afterburn])
+   [1] 0.0003381502
+
+
+   
+*  2011-04-20
+   should plot resid|X hist to see whether median 0
+** DONE check Reich and his code how he did for gamma/sigma identifiability problem, 
+   CLOSED: [2011-04-23 Sat 09:45]
+   fix gamma[1], for(s in c(2:p)), if min(cansign)>0
+   prior for sigma = flat prior (0,c1)
+** TODO try 1/sigma^2 ~ Gamma(1,1) prior
+** DONE check Mallick how he did for updating first level a0 and a1   :level:
+   CLOSED: [2011-04-26 Tue 14:30]
+   did not see He kept a0 and a1 unchanged during updating
+** DONE revise loglik_unippt for tau other than 0.5, and use y = xb+e , e~PT(tau); # myptquantile.R myloglikunippt.f 
+   library(DPpackage)
+   R CMD SHLIB myptquantile.f invcdfnorm.c
+   CLOSED: [2011-04-23 Sat 09:44]
+   1. y = x*b + e~N(0,1), 
+      compare with myptlm2.R with tau = 0.5 , with X~N(2,1), e~N(0,1), homo model
+      4-23, see homo-e1-myptquantile-50k-500obs, good estimates, good mixing
+   2. y = x*b + e ~ N(0,1)
+      try tau = 0.75, 0.9 , estimates should be added ***on intercept. X~N(2,1), 
+      homo-e1-myptquantile-50k-500obs-0.75 and 0.95, estimates good.
+   3. y = x*b + (x*gamma)*e , e~N(0,1), X~N(2,1), n=500, runs = 50k
+      1. tau = 0.5 
+	 > apply(foo2$beta[afterburn,],2,mean)
+	 1.116539 2.011414
+	 > mean(foo2$sigma[afterburn])
+	 96.60993
+      2. tau = 0.75 
+	 > apply(foo2$beta[afterburn,],2,mean)
+	 1.286611 3.049272
+	 > mean(foo2$sigma[afterburn])
+	 12.15426
+	 residuals plot looks fine , 4-25-2.pdf  [[file:polyatree/code/4-25-2.pdf]]
+      3. tau = 0.95
+	 > apply(foo2$beta[afterburn,],2,mean)
+	 12.729506  2.820130
+	 > mean(foo2$sigma[afterburn])
+	 9.64147
+	 residuals plot: [[file:polyatree/code/4-25-3.pdf]]
+
+   4. y = x*b + e , X~N(2,1), e~Bimodel,  HOMO 
+      1. tau = 0.5,
+	 > apply(foo2$beta[afterburn,],2,mean)
+	 0.8064216 2.0466124
+	 > mean(foo2$sigma[afterburn])
+	 2.767956
+	 [[file:polyatree/code/4-25-4.pdf]]
+      2. tau = 0.9
+	 apply(foo2$beta[afterburn,],2,mean)
+	 3.274973 2.037439
+	 > mean(foo2$sigma[afterburn])
+	 1.833906
+	 [[file:polyatree/code/4-25-5.pdf]]
+	 # qbimodel(0.9) = 2.841622
+
+** potential unconsistent of L(e), by Walker, Mallick (1999) and Jara (2009), also as to g(e)
+   Danison-Mallick
+
+
+* 2011-05-12
+  stick to Walker & Mallick 's method since y = x*b + e, dont have much random term when sampling from e.
+** DONE GetCount.R : get how many counts in the each interval, N(y,interval)
+
+* 2011-05-18
+** DONE mywallickptqr.R: 
+   but results seem not good
+   add f(res), much better for N(0,1) error , homo, 
+*** DONE add f(res) test bimodel
+    CLOSED: [2011-05-24 Tue 14:54]
+    beta estimates are good: 
+    mixing are fine:  [[file:polyatree/code/20110524a.pdf]]
+    residual plot look fine for bimodel : [[file:polyatree/code/20110524b.pdf]]    
+*** DONE add f(res) to test posterior density for bimodel: testposterior.R
+    CLOSED: [2011-05-24 Tue 14:54]
+    M must be large, n should be large, residual fine : [[file:polyatree/code/20110524c.pdf]]
+*** DONE test 0.9/0.75 quantile , for homo, standard normal
+    CLOSED: [2011-05-24 Tue 21:09]
+    1. 0.75: 30k runs, 500 obs, est = [2.4, 2.1] , qnorm(0.75) = 0.67
+       res vs X[,2] : [[file:polyatree/code/20100524d.pdf]]
+    2. 0.9 : 30k , 500 obs, est = [3, 1.97] , qnorm(0.9) = 1.28
+       res vs X[,2] : [[file:polyatree/code/20100524e.pdf]]
+*** TODO test 0.9 / 0.75 quantile , for homo, bimodel 
+** DONE code for heter model: myheterwallick.R
+   CLOSED: [2011-05-24 Tue 21:31]
+   some potential problems: 
+   1. large gamma ? 
+   2. small sample size ?
+   3. extreme quantile
+   4. X%*%gamma too restrictive 
+*** DONE test on heter, median, standard normal
+    CLOSED: [2011-05-25 Wed 00:04]
+    100k runs, 500 obs, betahat = [1.15, 2.2], gammahat = [1, 0.55]
+    mixing plot : [[file:polyatree/code/20110524f.pdf]]
+    res vs X[,2] : [[file:polyatree/code/20100524g.pdf]] 
+*** DONE test on heter , median, bimodel
+    CLOSED: [2011-05-25 Wed 01:48]
+    data look like : [[file:polyatree/code/20110525a.pdf]]
+    est : beta [1.11, 2.04], gamma [1, 0.2]
+    mixing plot : [[file:polyatree/code/20110525h.pdf]]
+    res vs X[,2] : [[file:polyatree/code/20110525i.pdf]]
+*** TODO test quantile other than 0.5
+** TODO think about the choice of A[1,] based on tau
+** TODO fit mixed PT model 
+
+* 2011-05-25
+  1. Hanson(2002) mentioned p1024: inefficiency in MCMC
+  2. the partition is critical
+  3. check prior for sigma(theta)
+** DONE back to Jara/Hanson's framework, mixed polya tree, marginalized PT, myheterptlm3.R 
+   CLOSED: [2011-05-28 Sat 19:17]
+   1. multivariate normal candidate and prior for beta and gamma
+   2. 
+** small tips for chasing mixing plot, choose sample of them, every 50 of them
+** DONE simulation : simulation0527.R
+   CLOSED: [2011-05-28 Sat 19:17]
+   b = [2,5] ,    gamma = [1,2], n = 500, runs = 100000  , X[,2] ~ unif(0,2)
+
+   a) data plot: 
+     - hist(y)
+     - y vs X[,2]
+   b) estimates: mean of afterburn 
+   c) mixing: b0, b1, gamma2, sigma
+   d) posterior residual density
+   e) estimates for any quantile , formula
+      
+   - y = x*b + e2 ~ N(0,1)
+   - y = x*b + (x*gamma) * e1 
+   - y = x*b + (x*gamma)*e2 ~ p*N(-2,1) + (1-p)*N(2,1)
+** DONE check posterior sigma close to upper bound (var(y)) [[file:polyatree/code/post-sigma.pdf]]      
+   CLOSED: [2011-06-01 Wed 13:22]
+** DONE get other quantile for simulation0527.R     
+   CLOSED: [2011-06-01 Wed 13:25]
+| Model | tau  |   0.25 |    0.5 | 0.75 |    0.9 |
+|-------+------+--------+--------+------+--------|
+| M2    | Q    | -0.585 | -0.016 | 0.57 | 1.1839 |
+|       | TRUE |  -0.67 |      0 | 0.67 |   1.28 |
+|-------+------+--------+--------+------+--------|
+| M1    | Q    |  -1.87 |  -0.02 | 2.04 |   3.16 |
+|       | TRUE |     -2 |      0 |    2 |        |
+|-------+------+--------+--------+------+--------|
+| M3    | Q    | -1.909 |  -0.02 | 2.06 |   3.17 |
+|       | TRUE |     -2 |      0 |    2 |        |
+   
+* 2011-05-29
+** TODO generalized to multivariate case (write down scratch first)
+
+* 2011-08-07
+** TODO check partially specified Polya Tree and fully specified one
+** TODO ask about theory part.    
+* 2011-08-24 
+    myhomompt1.R, myhetermpt1.R , no tuning so far. report: testmyhetermpt1.tex
+
+mike mention: priors should be difuse , not too tight, like variance*10. 
+also 
+
+* 2011-08-31
+** TODO test e1~bimodel vs indep e2~ normal , and get marginal 
+** TODO get marginal cdf estimatation from MPT
+** DONE flat prior on Sigma ?
+   CLOSED: [2011-09-13 Tue 22:41]
+no. for 2*2, prior on each component separately
+** TODO check myhetermpt1.R 
+** DONE check myheterptlm3.R 's sigma whether it goes to enormous large
+   CLOSED: [2011-09-13 Tue 22:40]
+no . it has a upper bound. see m1-mcmc.pdf for detail. (qr-polya.tex
+simulation part)
+** TODO try to type them: qr-polya.tex
+** TODO  test
+   1. [ ] homo normal
+   2. [ ] homo bimodel
+   3. [ ] heter normal
+   4. [ ] heter bimodel    
+
+* 2011-09-07
+  - dont use Wishart(smallest df,..) , instead, use sigma11, sigma22, rho,
+componently
+  - type to see whether intuition make sense about marginalized
+    inference (univariate from multivariate)
+  - MCMC try to be conservative   
+** DONE check how Reich did for heterogeneity in multivariate case
+   CLOSED: [2011-09-13 Tue 22:27]
+#        MHrate<-sum(dnorm(resids,cansigh*mmm,cansigh*sss,log=T)-
+#                    dnorm(resids,sigh*mmm,sigh*sss,log=T))+
+#                dnorm(cangamma[s],0,1,log=T)-dnorm(gamma[s],0,1,log=T)
+
+** some problem with myheterptlm3.R , not good for p=5, b=c(1,2,3,4,5), even homo model, try code for myhomoptlm3.R
+** found a bug in myhomoptlm3.R/myheterptlm3.R, mdzero should be 1, to fix mu=0. correct in myhomoptlm3.R .
+** still not good for beta0, seems converge very slowly. try separately mcmc(tune) beta component for myhomoptlm3.R.
+very slow when updating componentwise
+* 2011-09-14
+** check Shorr's paper Page 9-12
+** change can/tuning parameter in myhomoptlm3.R
+** DONE add progress bar in myhomoptlm3.R /myptlm2.R
+   CLOSED: [2011-09-15 Thu 23:53]
+** DONE check PTlm.R 's MCMC convergence : [[file:polyatree/code/homo-bimodel-PTlm.pdf]]
+   CLOSED: [2011-09-15 Thu 23:53]
+** DONE check myptlm2.R/myhomoptlm3.R for bimodel MCMC convergence:  [[file:polyatree/code/homo-bimodel-myptlm2.pdf]]
+   CLOSED: [2011-09-16 Fri 08:49]
+** DONE cummean for PTlm.R [[file:polyatree/code/homo-bimodel-PTlm-cummean.pdf]]
+   CLOSED: [2011-09-16 Fri 18:13]
+   nscan=nburn +(nskip +1)nsave
+   nsave=10k
+   nskip=20
+   nburn=5k
+** DONE add    nscan=nburn +(nskip +1)nsave in myptlm2.R (have not talked to Daniels)
+   CLOSED: [2011-09-16 Fri 18:15]
+[[file:polyatree/code/homo-bimodel-myptlm2-10k-new.pdf]]
+[[file:polyatree/code/homo-bimodel-myptlm2-cummean-10k-new.pdf]]
+
+** DONE revise myheterptlm3.R to myheterptlm5.R
+   CLOSED: [2011-09-17 Sat 23:44]
+   results not good. sigma seems weird. try normal candidate for
+   myptlm2.R -> very good 
+** DONE try normal candidate for sigma variable (myheterptlm5.R) 
+   CLOSED: [2011-09-19 Mon 21:10]
+   results good for homo-bimodel 'M1'
+   record [[file:polyatree/code/M1.pdf]]
+** DONE compare likelihood for different sigma in the baseline measure
+   CLOSED: [2011-09-18 Sun 21:09]
+   e3 on N(0,1) vs N(0,3) : log(3) > log(1)
+** DONE check myheterptlm5.R with heter-normal. beta=c(1,2) gamma=c(1,1) foo2
+   CLOSED: [2011-09-19 Mon 21:10]
+M2: [[file:polyatree/code/M2.pdf]]
+** DONE check myheterptlm5.R with heter-bimodel b=(1,2), Gamma=(1,1) foo3 M3 [[file:polyatree/code/M3.pdf]]
+   CLOSED: [2011-09-19 Mon 21:10]
+** DONE b=(1,2,3,4,5) g=c(1,1,1,1,1) M4 : [[file:polyatree/code/M4.pdf]]
+   CLOSED: [2011-09-19 Mon 21:11] 
+   gamma awful
+
+* 2011-09-20
+** DONE tune betac ~ N(beta, tune_i) componentwise 
+   CLOSED: [2011-09-22 Thu 16:29]
+*** DONE revise myptlm2.R to myptlm3.R : M1-0922.pdf [[file:polyatree/code/M1-0922.pdf]] [[file:polyatree/code/M1-2-0922.pdf]]
+    CLOSED: [2011-09-23 Fri 14:02]
+found an error in myptlm2.R (acc2=acc+1) 
+acceptance rate is very low. need to check tuning parameter trace plot 
+
+update to begin with ls est for beta 
+** DONE PTlm.R MCMC mixing plot : check 2011-09-14 for detail
+   CLOSED: [2011-09-22 Thu 16:29]
+** DONE not tune after burn 
+   CLOSED: [2011-09-22 Thu 16:29]
+** DONE try tuning all the time in myptlm3.R : myptlm4.R foo1.4 [[file:polyatree/code/M1-4-0923.pdf]] still not good, acceptance rate too low.
+   CLOSED: [2011-09-24 Sat 00:29]
+** TODO study tuning
+** DONE found  MHrate for beta wrong with long sentence splitted  , corrected. 
+   CLOSED: [2011-09-25 Sun 13:54]
+simulation : foo1.5 : good [[file:polyatree/code/M1-5-0924.pdf]] by myptlm3.R
+
+** DONE update myheterptlm5.R into updating componentwisely, : myheterptlm6.R , test M2: foo5.2 foo5.2.2 , M3: foo6 
+   CLOSED: [2011-09-27 Tue 15:22]
+   M1: foo6.1 p=5 awful [[file:polyatree/code/M1-6-0926.pdf]]
+
+   foo6.2 p=2 perfect [[file:polyatree/code/M1-6-2-0926.pdf]]
+
+   redo foo6.1 p=5 still awful
+
+   try p=3 ? perfect , quite good, [[file:polyatree/code/M1-6-3-0926.pdf]]
+
+   M2: still beta good, gamma weird, seems tend to be large
+   [[file:polyatree/code/M2-5-0924.pdf]]
+   need to check can 
+
+   but for p=2, gamma=(1,1) , M2: foo5.2.2,
+   [[file:polyatree/code/M2-5-2-0924.pdf]] , good mixing 
+
+   M3: p=2 foo6, [[file:polyatree/code/M3-lm6.pdf]] good 
+
+   M3: p=5 foo6.2 [[file:polyatree/code/M3-lm6-2.pdf]] beta good, sigma not
+   good, 
+
+   M3: p = 5, 20k, foo6.2.2 [[file:polyatree/code/M3-lm6-2-2.pdf]] beta good,
+   sigma still weird.
+
+   M3: p=3 foo6.3.3 kind of ok, but weird /same /similar mixing plot ?
+   sparse, check [[file:polyatree/code/M3-lm6-3.pdf]]
+
+*** TODO check Reich BQRiid's gamma for p=5
+*** TODO check MHrate for gamma ?
+
+** TODO generalized to multivariate case 
+*** TODO first revise myhomompt1.R to myhomompt2.R (following myheterptlm6.R) update componentwisely , including Sigma(componentwise), dnoe. 
+    detlogl_0 should be 0 instead of 1
+    - awful, but sigma matrix perfect. beta did not update at all . 
+    - guess the tuning parameter still too large, try BQRiid's tuning,
+      *.5, * 1.5
+    - but the sigma matrix did update /move 
+    - mhrate for beta is 0 all the time , but betac is moving 
+* 2011-09-28
+** TODO try X~ N(0,1)
+   - M1 , p=5, awful also. 
+** TODO try center X
+** DONE think about whether the choice of Base Measure affect the posterior , if M goes to infinite  
+   CLOSED: [2011-10-08 Sat 15:34]
+** TODO think about shrinking gamma to 0 (like LASSO)
+** TODO update multivaraite likelihood in the paper
+** TODO think about identifiability problem of gamma and sigma/Sigma
+** DONE revise intern report , rerun code, add tables and plots
+   CLOSED: [2011-10-04 Tue 20:49]
+** DONE read Lavine's paper more
+   CLOSED: [2011-10-08 Sat 17:28]
+   - DP is the only tailfree process in which \Pi does not play an
+     essential role (Lavine 1992)
+   - with mixture of PT, the problem of dependence on the partitions
+     is not as critical (Lavine 1992) p1230
+   - Hanson(2002) mention the advantage of mixing (p 1021)
+   - Hanson 2002 p1024 mention: mixture of pT also eliminates the need
+     to choose a centering distribution with adequate spread in an ad
+     hoc way 
+   - Hanson 2002 exmaples use twod different base measure : normal and
+     logistic. the resulting predictive densities are practically
+     indistinguishable . he find little difference in inferences
+     obtained from normal, logistic, or extreme value base measures
+     unless c is fixed to be very large.
+
+* 2011-10-05
+** DONE draft abstract for ENAR [[file:enar-abstract.txt]]
+   CLOSED: [2011-10-05 Wed 19:09]
+** DONE review (Hanson 2006) and (Jara 2009)
+   CLOSED: [2011-10-08 Sat 17:28]
+   - Hanson 2006 focus on non-marginalized 
+   - change drastically for different value of c
+   - c goes to 0,  likelihood more diffuse
+   - fitting a model with a large number of levels J and random or
+     small c can be problematic if data are unlike any member of base
+     measure and n is large 
+   - proposal a constant times the estimated asymptotic covariance
+     matrix from a ME fit of the underlying parametric model, would be
+     good 
+   - Bayes factors as model comparison
+   - when the prior on c favors small values and data are unlike the
+     centering distribution, MCMC mixing can be poor. 
+   - Jara (2009) better represent the distributional uncertainty and
+     to avoid the effects of the misspecification
+   - on marginalization , the infinite dimensional process G no longer
+     needs to be partially sampled , and inference is exact up to MCMC
+     error 
+   - c* ~ Lognormal(log c(t-1), tc) 
+   - p846 adaptive Metropolis entirely automate the process ?? ask
+   - how he knows the best tuning parameter for acceptance rate 
+   - upadte O: bij~N(bij, tb)
+   - simulation data: 1. bivariate normal 2. mixture of bivariate
+     normal 
+   - burn-in 20k + 40*20k = 820k scans 
+   - dimensions above 4 make the implementation practically impossible 
+   - how he gets those acceptance rate 
+
+** TODO try MCMC on c  : myheterptlm6.R -> myheterptlm7.R (add c MCMC ) also, write myloglik_unippt.f , adding cpar ; acutally , 
+   no need, since alpha parameter in ToolPT.f 
+   - M1, p=2 , [[file:polyatree/code/M1-7-2-1009.pdf]] fine
+   - M1, p=5, [[file:polyatree/code/M1-7-5-1009.pdf]] seems good, but
+     mixing bad, especially for b0.
+   - M1, p=2, beta=(1,1) , [[file:polyatree/code/M1-7-2-2-1010.pdf]] fine,
+     but not good for b0
+   - M1, p=5, beta=(1,1,1,1,1) , [[file:polyatree/code/M1-7-5-2-1010.pdf]]
+     estimates good, mixing good, except for b0
+     better than myheterptlm6 on (1,1,1,1,1) , file:polyatree/code/M1-6-5-1012.pdf
+** TODO try revise PTlmp.f to myheterptlmp.f (add gamma part) , myheterptlmp.R , testmyheterptlmp.R
+   function needed list : [[file:polyatree/code/function-needed-list.txt]]
+   put every function I need into myneededfunction.f 
+   cut posterior predictive error first to make the function go through 
+   R CMD SHLIB myheterptlmp.f ToolsPT.f ToolsMatrix.f ToolsDistributions.f ToolsRfun.c ToolsRnumbers.f ToolsRandlib.f ToolsCdflib.f ToolsSparseMatrix.f 
+
+* 2011-10-12
+** TODO fix myheterptlmp.f, write my own c function to let fortran call them (see function-needed-list.txt) : myToolsRfun.c 
+   - R CMD SHLIB myheterptlmp.f myneededfunction2.f myToolsRfun.c ToolsRfun.c 
+   - loglik_unippt : in myneededfunction2.f
+   - ToolsRfun.c (clean invcdfnorm.c -> myToolsRfun.c, not to make multiple definition
+     of function)
+   - myToolsRfun.c 
+   - [X] in myheterptlmp.f, when generating random variable, rndstart
+     first and rndend last
+   - debug myheterptlmp.R/myheterptlmp.f  : log-sigma some problem  ,
+     bug in acceptance step : maybe myrunif , no myrunif(a,b)
+   - now fix myrunif in myheterptlmp.f , good until MCMC ends
+   - Error in dimnames(x) <- dn : 
+     length of 'dimnames' [2] not equal to array extent
+   - never accept , something wrong with acceptance procedure
+   - found myrunif(0,1) return NaN, because defined :'real myrunif'
+     not 'real*8 myrunif' not only this
+   - should be myrunif(0.d0, 1.d0)
+   - not update again  for heter model, but good for homo model 
+   - [X] plot.ptlm function not plot gamma parameter well 
+   - [X] plot.ptlm no residual plot
+   - [ ] check heter model gamma parameter
+   - [X] gamma did not update?
+   - [ ] now gamma problem fixed, but for heter model, gamma not right ?
+   - [ ] check what's identifiability problem for a semi parametric model
+   - [X] check gamma  and residual.
+   - [ ] alpha 
+   - [X] plot no gamma3 
+   - weird mixing somehow for heter model 
+   - when error is normal , quite good for mixing :fit1.3.2
+
+   - simulation 
+     -- M3 terrible 
+
+*** TODO try myheterptlmp.R with updating componentwisely into myheterptlmp2.R
+
+** TODO check heteroskatic model (He 1997) in Reich 2009
+   - he set median(e) = 0, |e| has median 1 , x'gamma >0 
+   - heteroscedastic model see *Gutenbrunner and Jureckova (1982)* and
+     *Koenker and Zhao (1994)*
+   - 3 procedure for his RRQ
+** TODO try y = xb + e , make (e tau quantile ) 0 using myhomolmp.f ?
+
+** DONE fit y= x*beta + x*gamma*e, e~Normal(0, sigma^2) , test MCMC on gamma : myheterlm.R
+   CLOSED: [2011-10-23 Sun 15:46]
+   - gamma mixing bad [[file:polyatree/code/myheterlm.pdf]]
+   - try another gamma likelihood
+   - but when use X=(1,x,x^2, y,y^2), perfect [[file:polyatree/code/myheterlm.pdf]]
+** DONE ABOUT myheterptlm7.R , more simulation
+   CLOSED: [2011-10-24 Mon 19:16]
+   - M2, normal error , heter model, p=3, gamma=c(1,0.5,.5) , perfect
+     good. [[file:polyatree/code/M2-7-1017.pdf]]
+   - M3, bimodel error, hetermodel p=3,  gamma=c(1,0.5,.5) , i think
+     good, [[file:polyatree/code/M3-7-1017.pdf]]
+   - M3, bimodel, p=5 , gamma=c(1,0.5,0.5,0.5,0.5) , perfect after
+     *fix X* [[file:polyatree/code/M3-7-4-1023.pdf]]
+   - M3, bimodel , p=5, gamma=rep(1,5), perfect,
+     [[file:polyatree/code/M3-7-5-1024.pdf]] 
+   - M3, bimodel, p=5, gamma=(1,0.50.50.50.5), beta=1:5, perfect 
+     [[file:polyatree/code/M3-7-6-1024.pdf]] 
+** DONE MCMC y= (x*gamma)*e, e~N(0, sigma), myheterlm2.R , Perfect, fix X, [[file:polyatree/code/myheterlm.pdf]]
+   CLOSED: [2011-10-24 Mon 13:55]
+** DONE try to get predictive density function throught plot.ptlm function , and inplement it into posteriorplot2.R also modify to myheterptlm8.R
+   CLOSED: [2011-10-28 Fri 11:14]
+   - M3 , good,      [[file: M3-8-1-1024.pdf]] 
+   - M1 :   [[file:M11-8-1025-beta.pdf]] [[file:M11-8-1025-gamma.pdf]] 
+   -M2 :   [[file:M22-8-1025-beta.pdf]] [[file:M22-8-1025-gamma.pdf]] 
+   -M3 :   [[file:M33-8-1025-beta.pdf]] [[file:M33-8-1025-gamma.pdf]] 
+   -M4 simulation :   [[file:M44-8-1025-beta.pdf]] [[file:M44-8-1025-gamma.pdf]] 
+** TODO what to do next? consistency ? efficiency ? CLT ?
+** DONE modify posteriorplot2.R to posteriorplot3.R , 5*3, and error , which fit into tex file (8*10 inch) for myheterptlm8.R 
+   CLOSED: [2011-10-26 Wed 12:32]
+
+
+* 2011-10-26
+** DONE literature review from Mike's book, Rubin 1976 (Annals) to now or Little 1990's mixture model ?, key word: Bayesian , missing , incomplete, 
+   CLOSED: [2011-11-03 Thu 11:54]
+   - 195+234 paper
+   - title include keyword
+   - no bayesian network
+   - no application 
+   - [ ] some about quantile regression , need check
+   - see Google docs, and [[file:~/Documents/RA/list.pdf]]
+
+** DONE following myheterptlm8.R and myhetermpt2.R -> myhetermpt3.R 
+   CLOSED: [2011-10-28 Fri 11:11]
+   - M1: [[file:MM3-1-1027-beta.pdf]]  [[file:MM3-1-1027-gamma.pdf]]
+     y = x*beta + e1 , 
+   - M2: [[file:MM3-2-1027-beta.pdf]]  [[file:MM3-2-1027-gamma.pdf]]
+     y = x*beta + e2 (e21 ~ Normal, e22 ~ bimodel )
+   - M3: [[file:MM3-3-1027-beta.pdf]]  [[file:MM3-3-1027-gamma.pdf]]
+     y = x*beta + (x*gamma)*e1
+   - M4: [[file:MM3-4-1027-beta.pdf]]  [[file:MM3-4-1027-gamma.pdf]]
+     y = x*beta + (x*gamma)*e2
+** DONE posteriorplot4.R for myhetermpt3.R 
+   CLOSED: [2011-10-27 Thu 12:51]
+
+
+* 2011-11-02
+** DONE get posterior inverse cdf from univariate estimates , revise to myheterptlm9.R , add ptquantile2.R into it. 
+   CLOSED: [2011-11-16 Wed 15:07]
+** DONE revise ptquantile.R to ptquantile2.R for posterior inverse cdf, adding cpar, tau vector 
+   CLOSED: [2011-11-02 Wed 13:46]
+** DONE test another simulation model (add cov into error distribution) M5-6 (Normal) M7-8 (mixed normal + normal + cov) testmyhetermpt3.R
+   CLOSED: [2011-11-04 Fri 19:26]
+
+   - MM3-5  [[file:MM3-5-1104-beta.pdf]]  [[file:MM3-5-1104-gamma.pdf]]
+   - MM3-6  [[file:MM3-6-1104-beta.pdf]]  [[file:MM3-6-1104-gamma.pdf]]
+** DONE can test correlated bimodel with normal ?
+   CLOSED: [2011-11-11 Fri 14:05]
+   - both are good. 
+   - MM3-7  [[file:MM3-7-1108-beta.pdf]]  [[file:MM3-7-1108-gamma.pdf]]
+   - MM3-8  [[file:MM3-8-1108-beta.pdf]]  [[file:MM3-8-1108-gamma.pdf]]
+   - sample may be bias or not sufficient : copula rho=0.3 for MM3-7 MM3-8
+
+** DONE check Hanson and Johnson's paper (in terms of e), or QR literature (y=x*beta+e) in terms of beta
+   CLOSED: [2011-11-16 Wed 15:07]
+   - Hanson Johnson 2002: p1023  predictive density can be
+     discontinuous at 0 because 0 in pi_theta for all theta
+
+** TODO add posterior (predictive ) density plot for MPT 
+** TODO check paper reference: Chaudhuri and Loh: Nonparametric estimation of conditional quantiles using quantile regression trees.
+** DONE check the chapter in some book : DP and PT
+   CLOSED: [2011-11-16 Wed 15:07]
+   - p113: Because the DP sit on discrete measures, so does any
+     mixture of these and hence they are unsuitable as priors for
+     densities. For the same reason, it is also inappropriate for the
+     parametric part of a semiparametric problem. For example,
+     Diaconis and Freedman show that the Dirichlet prior in a location
+     parameter problem can lead to pathologies as well as
+     inconsistency of the posterior for even reasonable "true"
+     densities. 
+** DONE check out Reference : 'Wild bootstrap for quantile regression' (Feng, Xu, Hu) 
+   CLOSED: [2011-11-16 Wed 15:07]
+   - wild bootstrap for heteroscedasticity
+
+
+
+* 2011-11-09
+** DONE find the true correlation of e41 and e42 in model 10 and 12
+   CLOSED: [2011-11-17 Thu 10:30]
+   - -0.589 ?
+** TODO maybe can tune baseline measure firstly on independent marginal distr'n and then tune scaled parameters 
+** TODO turn to bimodel bivariate normal distribution for e2 
+   - MM3-7 rho ?? = cov , not cor , 1114
+   - MM3-8 1114
+** TODO try plot 3d picture of those samples  (plot ee[1,] vs ee[2,])
+** TODO think about how baseline measure affect the computation convergence ?
+** DONE can get posterior marginalized quantile of error without mentioning the X, maybe can integral out X from hanson 2006 p1551 equation 5,and 6,7
+   CLOSED: [2011-11-14 Mon 19:13]
+   - integral out equation 6 in terms of script X
+** Reference : 
+   - Spatiotemporal quantile regression for detecting distributional changes in environmental processes : Reich 2011
+   - Bayesian Spatial Quantile Regression, Reich 2011,
+   - noncrossing quantile regression curve estimation, Bondell 2010 
+   - Bayesian quantile regression for count data with application to
+     environmental epidemiology
+
+** TODO check out asymptotic property 
+
+* 2011-11-16
+** DONE check revised paper 
+   CLOSED: [2011-11-21 Mon 10:24]
+** DONE reference: check out missing + quantile regression
+   CLOSED: [2011-11-22 Tue 13:59]
+   - Yoon-2010
+   - Yuan-2010 print (good review on correlated quantile regression)
+By inversely weighting the estimating equation with the
+probability of dropout, Lipsitz et al. (1997) studied QR for
+longitudinal data with ignorable dropouts. Noting that the
+classical random-effects model can be reformulated as a pe-
+nalized least-square estimation, Koenker (2004) developed
+a1-regularization QR method to shrink individual effects to-
+ward a common value. Geraci and Bottai (2007) proposed
+a random-effects QR model for longitudinal data based on
+the asymmetric Laplace distribution (ALD; Yu and Moyeed,
+2001), in which the within-subject correlation was modeled by
+random intercepts. Other applications of quantile regression
+in correlated data include the work of Cole and Green (1992),
+Jung (1996), and Heagerty and Pepe (1999), among others.
+
+no distribution assumption for error in the conclusion part /?
+
+   - Sun-2011
+* 2011-11-30
+** TODO check ton's of paper review, reference 
+* 2011-12-08
+* 2012-01-12
+** TODO test Koenker 2005, p13-14 , heter model , test0111.R, 
+
+* 2012-01-19
+  - betahat ( tau) = hat( beta + gamma*F^-1 ) , directly, not  plug-in
+    estimate
+  - look at L(y1, .., yn|beta) directly , find var or something else. 
+  - check Yu-2001 for posterior under an improper prior
+  - read Lum-gelfand paper.
+  - read Kim-Yang-2012-JASA.pdf 
+  - read Kottas-Krnjajic-2009 paper 
+
+* 2012-01-27
+  - send dropbox folder 
+  - find dataset email
+  - send draft
+  - find Hogan, sinica paper, no bayesian
+* 2012-01-30
+  - if it's easier to extend to multivariate case with quantiles with
+    polya tree and mixture of DPs
+
+* 2012-02-01 : report: 20120201-report.pdf [[file:20120201-report.pdf]]
+** TODO find dataset and make comparison
+   - try look at Reich 's paper for dataset 
+   - reich-simulation 1-5.R (kelp, crab, clam, plankton, shera)
+   - for M1 reich, 10 time MSE than quantreg, consider 
+     - may should use beta(tau) = beta + gamma*F^-1
+     - optimize myheterptlm9.R : simultaneously sample vector
+     - nonparametric may lose some power
+     - test for other complicated case  
+     - [ ] X=(1,x1,x1^2)
+   - [X] code myheterptlm10.R from myheterptlm9.R
+     - beta(tau) = beta + gamma* F^-1(tau) for each iteration
+     - return(beta(tau)) vector
+     - also return F^-1(tau)
+   - [ ] code for FBQR
+   - [X] code for ASL , Yu 2001??  yu-mcmc.R ( tygro)
+   - why exclude the intercept when calculating MSE ?
+*** simulation
+    - reich-simulation*.R (kelp, crab, clam, plankton, shera)
+    - yu-mcmc.R (testyu-mcmc.R) (tygro)
+    - qreg.R 
+    - see 20120201-report.pdf
+** for my model, we can get beta(tau) for several tau simultaneously, while for ASL, quantreg and Reich BQR,  they need to fit separate model 
+** Literature:
+*** RUbbery Polya Tree 
+    We propose a generalization of the PT that reduces the undesirable
+    sensitivity to the choice of Π. To reduce the impact of the partition
+    on statistical inference, we allow the random variables  to be
+    dependent within the same level m, but keeping the independence
+    assumption between different levels. This defines a new RPM that still
+    belongs to the class of tail-free processes, and thus inference will
+    still depend on the choice of partitions. But the random probabilities
+    of the partitioning subsets vary in a smoother fashion across the sets
+    in each level of the partition tree. The only tail-free process
+    invariant to the choice of partitions is the DP. To keep the new prior
+    comparable with the original PT we continue to use beta distributions
+    as the marginal distributions for each Y. This is achieved by
+    considering a stochastic process with beta stationary distribution as
+    prior for . The construction of the process is defined in such a way
+    that for a specific choice of the hyperparameters we recover
+    independence of the Ys within the same level and thus having the
+    regular PT as particular case.
+    
+    - being a tail-free distribution is a condition for posterior
+      consistency (Freedman, 1963; Fabius, 1964).
+    - propositon: rPT = PT marginally
+    - corollary: absolutely cts
+    - corollary: posterior consistence 
+
+* 2012-02-08 : [[file:20120208-report.pdf]]
+** TODO do more iteration for M2 and M3, for 5 datasets
+** TODO get coverage rate , build credible interval for each dataset, see if cover the true value 
+** TODO check qreg function for standard deviation (check manual)
+** report sd as sd/sqrt(200)
+** DONE revise myheterptlm10.R to myheterptlm11.R , sample beta and gamma as a vector 
+   CLOSED: [2012-02-10 Fri 23:12]
+** review Jara paper 
+** not much property in other's paper about PT (see qr-review.org / qr-review.tex)
+** DONE test FBQR : testBQRiid*.R  (kelp, crab, clam, plankton, shera) tau=0.5
+   CLOSED: [2012-02-17 Fri 13:28]
+** DONE revise myheterptlm11 to myheterptlm12.R ( with same prior and candidate with PTlm.R) (test in tygro)
+   CLOSED: [2012-02-14 Tue 23:24]
+
+** DONE without intercept , beat them 
+   CLOSED: [2012-02-15 Wed 15:20]
+
+* 2012-02-15 
+** DONE test FBQR : testBQRiid*.R  (kelp, crab, clam, plankton, shera) tau=0.9 ; see [[file:20120208-report.pdf]]
+   CLOSED: [2012-02-17 Fri 13:28]
+** DONE try revise myheterptlm12.R , simplify log normal candidate
+   CLOSED: [2012-02-17 Fri 13:28]
+
+** TODO test M4 
+   - [X] w/ myheterptlm12.R (since previously FBQR still best) kelp ,
+     see [[file:20120208-report.pdf]] still larger than BQR for M4 tau=0.9
+   - [X] w/ X=(1,x1,x2) , suspect X=(1,x3) make it fail 
+	 -- w/ BQRiid (@tygro, testBQRiid4(2).R) 
+	 --- tau=0.5 , w/o int, 7.66(9.7)
+	 --- tau=0.9 , w/o int, 14.1(16.6)
+	 -- w/ myheterptlm12.R  (@plankton, reich-simulation-4(2).R)
+	 --- tau=0.5, w/o int, 8.90(12.1)
+	 --- tau=0.9, w/o int, 14.1(17.3)
+   - PT is  not assumed to beat BQR in M4, since M4 is also mixture of
+     heterogeneous normal 
+   - add onepage=TRUE parameter to posteriorplot3.R
+   - [X] present alhamzawi-yu-2011 paper , especially simulation , may
+     follow that simulation 
+   - [X] try to do the same simulation in alhamzawi-yu-2011.pdf @crab alhamzawi-simulation-1.R
+	 -- which is true beta , after test, should be:
+         beta+gamma*F^-1(tau)
+   - convergence rate may be different, Reich's BQR default  5000,
+     mine PT is 1000
+** print code myheterptlm13.R, ptquantile.R , posteriorplot3.R , loglik_unippt.f, 
+
+** seems like runs=1000 is not enough for convergence, what to do  for MCMC simulation
+
+* 2012-02-22 [[file:20120221-report.pdf]] [[file:20120222-report.pdf]]
+** DONE get coverage
+   CLOSED: [2012-02-28 Tue 14:58]
+** DONE length of credible interval
+   CLOSED: [2012-02-28 Tue 14:59]
+** DONE get REich BQR running time : 5000 runs , 100=n, 480 = 6 min ; while for PT, 1000 runs, 400s
+   CLOSED: [2012-02-28 Tue 16:18]
+** TODO take look at sd(betahat - beta true/ betatrue)
+** TODO numerical error when jump in mixing 
+** DONE take look at why PT at M2 tau=0.9 so small 
+   CLOSED: [2012-02-23 Thu 14:13]
+   cauz mod(y1~x)
+** TODO why ALS se so small 
+** DONE PT M4 and M9 no good at all , see next
+   CLOSED: [2012-02-25 Sat 02:25]
+** DONE another M4 (IMPORTANT)
+   CLOSED: [2012-02-24 Fri 00:45]
+   - [X] w/ X=(1,x1,x2), M4 w/ mixture normal error , half N(-2,1),
+     half N(2,1), boot=100 save time
+	 -- myheterptlm13.R (@kelp, reich-simulation-4(3)-pt.R)
+	 -- testBQRiid4(3).R (@tygro for tau=0.9, @shera for tau=0.5)
+|-----+------------+------------|
+|  M4 |         PT |        BQR |
+|-----+------------+------------|
+| 0.5 | 25.7(3.45) | 34.3(4.38) |
+| 0.9 | 12.5(1.39) | 21.3(2.28) |
+|-----+------------+------------|
+
+** DONE RQboot1-5.R w/ RQboot.R, (@kelp)
+   CLOSED: [2012-02-26 Sun 16:54]
+** DONE ASLboot.R @kelp , ASLboot1-5.R (@kelp, crab, clam, plankton, shera)
+   CLOSED: [2012-02-27 Mon 12:31]
+** DONE PTboot.R w/ myheterptlm13.R (@kelp, crab, clam, tygro, shera)
+   CLOSED: [2012-02-27 Mon 23:34]
+
+** DONE BQRboot.R BQRboot1-5.R @croaker, plankton, clam, redroot, seaweed
+   CLOSED: [2012-02-29 Wed 11:20]
+
+** DONE simulation M1-4 
+   CLOSED: [2012-02-29 Wed 11:20]
+   - n=100
+   - boot=100
+   - M1: Xb+N(0,1)
+   - M2: Xb+ 1/2 N(-2,1) + 1/2 N(2,1)
+   - M3: Xb + ASL/DEXP(2)
+   - M4: Xb + (Xgamma)*1/2 N(-2,1) + 1/2 N(2,1)
+   - M5: Xb (x4 ~|t2|) + N(0,1)
+
+MSE
+|-------+------------+-------------+-------------+--------------|
+| Model |       FBQR |         ASL |        QReg |           PT |
+|-------+------------+-------------+-------------+--------------|
+| M1.5  | 1.12(0.13) | 1.06(0.126) |  1.2(0.137) |  1.16(0.121) |
+| M2.5  | 3.12(0.47) |  12.2(1.31) |   16.1(1.3) |   2.28(0.30) |
+| M3.5  | 1.12(0.11) |  1.31(0.16) | 1.17(0.135) |   1.42(0.16) |
+| M4.5  | 40.4(4.42) | 195.4(15.4) |   213(15.5) |   35.4(3.97) |
+| M5.5  | 0.77(0.07) |  0.87(0.08) | 1.11(0.106) | 0.82 (0.076) |
+|-------+------------+-------------+-------------+--------------|
+| M1.9  | 2.12(0.25) | 1.95(0.231) |  2.39(0.24) |   2.45(0.26) |
+| M2.9  | 2.86(0.31) |  3.65(0.43) | 5.39(0.579) |   4.40(0.48) |
+| M3.9  |  3.47(0.4) |  4.81(0.64) |  6.56(0.68) |   4.93(0.56) |
+| M4.9  | 23.4(3.97) |  38.2(4.86) |  45.7(5.46) |   28.5(4.32) |
+| M5.9  | 2.82(1.23) |  1.86(0.19) | 2.03(0.147) |   2.19(0.28) |
+|-------+------------+-------------+-------------+--------------|
+
+LENGTH for b2
+|-------+------+-------+-------+------|
+| Model | FBQR |   ASL |  QReg |   PT |
+|-------+------+-------+-------+------|
+| M1.5  | 0.45 | 0.664 | 0.422 | 0.44 |
+| M2.5  | 0.81 |  1.22 |  1.38 | 0.59 |
+| M3.5  | 0.52 |  0.68 | 0.416 | 0.52 |
+| M4.5  | 2.37 |  2.79 |  4.25 | 1.38 |
+| M5.5  | 0.45 |  0.71 |  0.42 | 0.43 |
+|-------+------+-------+-------+------|
+| M1.9  | 0.70 |  1.23 | 0.673 | 0.67 |
+| M2.9  | 0.85 |  1.53 | 0.947 | 0.83 |
+| M3.9  | 1.04 |  1.51 |  1.16 | 0.96 |
+| M4.9  | 2.04 |  2.30 |  2.07 | 1.97 |
+| M5.9  | 0.71 |  1.39 | 0.624 | 0.66 |
+|-------+------+-------+-------+------|
+
+LENGTH for b3
+|-------+------+-------+-------+------|
+| Model | FBQR |   ASL |  QReg |   PT |
+|-------+------+-------+-------+------|
+| M1.5  | 0.34 | 0.492 | 0.324 | 0.36 |
+| M2.5  | 0.62 |  0.87 | 0.958 | 0.50 |
+| M3.5  | 0.41 |  0.53 | 0.323 | 0.42 |
+| M4.5  | 2.28 |  2.21 |  3.61 | 1.29 |
+| M5.5  | 0.34 |  0.54 | 0.327 | 0.34 |
+|-------+------+-------+-------+------|
+| M1.9  | 0.51 |  0.93 | 0.738 | 0.53 |
+| M2.9  | 0.67 |  1.22 | 0.977 | 0.69 |
+| M3.9  | 0.76 |  1.13 |  1.64 | 0.78 |
+| M4.9  | 1.91 |  1.94 |  2.38 | 1.79 |
+| M5.9  | 0.54 |  1.04 | 0.826 | 0.51 |
+|-------+------+-------+-------+------|
+
+Coverage Prob
+|-------+------+------+------+------|
+| Model | FBQR |  ASL | QReg |   PT |
+|-------+------+------+------+------|
+| M1.5  | 0.94 |    1 | 0.91 | 0.97 |
+| M2.5  | 0.97 | 0.88 | 0.87 | 0.94 |
+| M3.5  | 0.98 | 0.99 | 0.92 |    1 |
+| M4.5  | 0.91 | 0.56 | 0.84 | 0.71 |
+| M5.5  | 0.95 | 0.99 |  0.9 | 0.99 |
+|-------+------+------+------+------|
+| M1.9  | 0.95 |    1 | 0.92 | 0.93 |
+| M2.9  | 0.99 |    1 | 0.91 | 0.91 |
+| M3.9  | 0.96 |    1 | 0.91 |  0.9 |
+| M4.9  | 0.96 | 0.84 | 0.86 | 0.96 |
+| M5.9  | 0.97 |    1 | 0.93 | 0.95 |
+|-------+------+------+------+------|
+
+** M4: runs=1k, convergence is bad for M2-M4 PT, try increasing runs->10k , fine for M1, and M5
+   even for runs = 10k, still bad. 
+** DONE test M6: e ~ Poisson( 3) ? PTboot6.R
+   CLOSED: [2012-02-29 Wed 13:14]
+   plot weird, even for PTlm 
+
+* 2012-02-29
+** TODO do coverage prob separately 
+
+** DONE try Gamma(3,1) , PTboot6.R , esp more obs like n=1k, , also check Reich on that
+   CLOSED: [2012-03-07 Wed 14:17]
+   foo6, PTboot6.R, fit6 @kelp , [[file:fit6.pdf]] [[file:foo6.pdf]]
+
+** DONE PTdensity works quite well in Gamma(3,1) 
+   CLOSED: [2012-03-01 Thu 15:00]
+
+** DONE try mixing mu ? first from PTlm, no way. same. but try 1+x1 as X
+   CLOSED: [2012-03-02 Fri 10:27]
+   previously, the posterior density plot is  not like gamma at all. but
+   later found it's just a location shift of gamma. so PTlm works.
+
+** DONE compare hetergenous fit4 (PTlm) @tygro and foo4 @kelp, runs=10k, n=500
+   CLOSED: [2012-03-07 Wed 11:13]
+   [[file:fit4.pdf]] [[file:foo4-2.png]] [[file:foo4-1.png]]
+
+   
+* 2012-03-07 [[file:20120314-report.pdf]]
+** TODO make slides for ENAR, 5 min for QR, 5 for Polya, 5 for my. see [[file:enar-minzhao-slides.pdf]]
+   - PT-talk3.pdf
+   - quantreg.pdf
+   - rq.pdf
+   - schrimpf-2011.pdf
+
+** TODO optimize myheterptlm13.R w/ fortran [[file:HeterPTlm.R]]	  :HeterPTlm:
+   [[file:heterptlm1.f][heterptlm1.f]] (for mcmc) , w/ invcdfnorm.c , [[file:heterptlm1.R]]
+   mixing bad, begin to add tuning parameter , say gamma(3,1) , [[file:gamma-100-10k.pdf]]
+   first , try tune separately , then try same model as above
+   (gamma(3,1), 100-10k, 3+x1+x2+gamma(3,1)) 16s for 100 nsave,
+   [[file:gamma-100-10k-aftertune.pdf]]
+
+   after correct prior paramater, add 20k burning,
+   [[file:gamma-100-10k-0312.pdf]]
+   
+   now test mixture of Normal, pretty good for mixing and result 
+   even for heterogeneity
+   [[file:MN-100-10k-0312.pdf]]
+
+   2012/03/12   back up heterptlm1.f as heterptlm1.back
+
+*** DONE add posterior quantile (tau) : [[file:postquantile.f]] perfect.
+
+*** DONE combine postquantile.f with heterptlm1.f
+
+*** DONE wrap heterptlm1.f in [[file:HeterPTlm.R]] with [[file:heterptlm3.f]]
+    (y,X, mcmc, prior, quan)
+    mcmc=c(nburn, nskip, nsave, ndisp)
+    prior: 
+    beta ~ N(betapm, betapv)
+    gamma ~ N(gammapm, gammapv)
+    1/sigma2 ~ Gamma(tau1, tau2) tau
+    alpha ~ Gamma(aa0, aa1) a0b0
+
+*** DONE summary.HeterPTlm  in [[file:HeterPTlm.R]]
+
+*** DONE print.HeterPTlm  in [[file:HeterPTlm.R]]
+*** DONE record time: n=100, burn=10k, thin=20, nsave=1k
+1) HeterPTlm: 93s, 47s after running on a x86 system (@whale)
+2) Reich: BQRiid : 25s
+
+*** DONE do M1-M6, give output pdf file (mixing)		 :simulation:
+    [[file:0314-1.pdf]]
+    [[file:0314-2.pdf]]
+    [[file:0314-3.pdf]]
+    [[file:0314-4.pdf]]
+    [[file:0314-5.pdf]]
+    M1: x\beta + N(0,1)
+    M2: x\beta + Gamma(3,1)
+    M3: x\beta + Mixture Normal
+    M4: x\beta + (1-0.5x_1 + 0.5x_2) Mixture normal
+    M5: x\beta + (1-0.5x_1 + 0.5x_2) Gamma(3,1)
+
+*** DONE do simulation M1-M6 , get table about MSE 
+    see 03-14
+*** DONE guessing to tune whole beta vector might be better *CANCEL*
+
+** DONE write my own fortran code for loglik_unippt function,
+   remember to compare to Jara's function
+   I check Jara's code for loglik_unippt, it should be right if we
+   take mdzero not equal to 0, a little bit worse for b1, but for
+   other , almost same 
+
+   set mdzero =0 , seems to be the right way
+** DONE check Gamma(3,1)'s PTboot6.R, foo6's mixing , check jump , *CANCEL*
+
+** DONE mdzero=0 or mdzero=1 , loglik_unippt is right , Jara used to mention about calculating from second level, check 
+*** in [[file:heterptlm1.R]]
+   mdzero!=0  seems to be thr right answer, but why there is mdzero=0
+   option
+
+   mdzero=0 : calculate from 2nd level
+   mdzero=1 : calculate from 1st level
+   and mdzero=0/1 depends a lot, loglik may switch 
+: nrec <- 20
+: > v <- rgamma(nrec, 3,1)
+: > loglik_pt(nrec, 1, 6, 1, 0, 6.8^2, v, whicho, whichn, 0)
+: [1] -42.10861
+: > loglik_pt(nrec, 1, 6, 1, 0, 6.8^2, v-3, whicho, whichn, 0)
+: [1] -50.66843
+: > loglik_pt(nrec, 0, 6, 1, 0, 6.8^2, v, whicho, whichn, 0)
+: [1] -52.92703
+: > loglik_pt(nrec, 0, 6, 1, 0, 6.8^2, v-3, whicho, whichn, 0)
+: [1] -49.74306
+   but when change to another partition
+: loglik_pt(nrec, 1, 6, 1, 0, 1^2, v, whicho, whichn, 0)
+: [1] -81.20012
+: > loglik_pt(nrec, 1, 6, 1, 0, 1^2, v-3, whicho, whichn, 0)
+: [1] -34.71013
+: > loglik_pt(nrec, 0, 6, 1, 0, 1^2, v, whicho, whichn, 0)
+: [1] -92.01854
+: > loglik_pt(nrec, 0, 6, 1, 0, 1^2, v-3, whicho, whichn, 0)
+: [1] -33.78475
+   
+** DONE mdzero=0 or 1  in loglik_unippt, but in PTlm, always set it to be 0
+   and seems like set mdzero=0 is the right answer for heterptlm.f ,
+   i guess it is to fix or tend to shrink to median 0 as we specify to
+   error should be 
+
+** DONE check Walker and Mallick , they might mention about not to update first level, fixing median and variance ? :median:variance:level:
+*** They prefer not updating the first level , even the second level to fix median  and variance. might help for (x\gamma)\epsilon .
+   walker-1997.pdf
+   /If F is allowed to be completely arbitrary then a scource of
+   confouding is the location of F with the intercept term of \beta. A
+   solution to this problem is provided if the median of F is fixed. This
+   is possible with Polya trees, without much difficulty, by taking the
+   first partition at level 1 to coincide with the fixed median value,
+   i.e. to take B0=(-\nfty, \lambda) and B1=[\lambda, \infty) if \lambda
+   is the required median. The random variable C_0 is now defined to be
+   1/2 , instead of coming from a beta distribution. The centring of F is
+   not affected in any way provided that centring probability
+   distribution G also has its median at \lambda./
+
+   mallick-walker-2003.pdf
+   If F is allowed to be completely arbitrary then a source of confounding is
+   the intercept term of β with the location of F . To solve this problem we fix
+   the median of F at G−1 (1/2) by defining F (B0 ) = F (B1 ) = 1/2. This does
+   not affect the centering of F . If G is normal with median at 0 then F has its
+   median at 0 almost surely. Here (2) becomes a median regression model with
+   medg(Ti) = −Xi β instead of the more usual mean regression model. We will
+   also fix the quantiles to control the variance as F (B00 ), F (B01 ), F (B10 ) and
+   F (B11 ) all fixed at 1/4 so that the interquartile range will be fixed.
+
+   We can then sample a random F from this posterior (up to level M only)
+   according to Definition 1 but with F (B0 ) and F (B1 ) fixed at 1/2 and F (B00 ),
+   F (B01 ), F (B10 ) and F (B11 ) all fixed at 1/4.
+
+** DONE also compare with myheterptlm13.R, where the mdzero=1, and the algorithm seems to be right.
+*** [[file:heterptlm1.R]] , with gamma(3,1) 3+x1+x2 + gamma(3,1), 100, 1k, 
+    [[file:myptlm13-gamma.pdf]] fine (right beta1, even for 1k)
+    - myheterptlm13 
+      -- mdzero=1 : 3.66
+      -- mdzero=0 : 5.66 mixing is bad [[file:myptlm13-gamma-mdzero0.pdf]]
+    - heterptlm1
+      - mdzero=1 : 0.68, but [[file:md1.pdf]] ,a location shift
+      - mdzero=0 : 5.23 
+
+** pre-specify prior parameters , report them and discuss with mike
+
+* 2012-03-14 [[file:20120321-report.pdf]]
+** TODO revise ENAR slides
+*** figure							     :figure:
+    [[file:homo-heter-fig.R]]
+** TODO test Gamma(3,1) post quantile with n=1k ?      :HeterPTlm:simulation:
+   foo2, n=1k, wired output, may because of large M ? try set M=7 or 6
+   ? or because nsave=1k ?
+   try X\beta + Mixture normal with n=1k
+
+   M1: [[file:0316-1.pdf]]
+   M2: [[file:0316-2.pdf]]
+   M3: [[file:0316-3.pdf]] bad
+   M4: [[file:0316-4.pdf]] bad
+   M5: [[file:0316-5.pdf]]
+
+   try to adjust mdzero=1, in HeterPTlm.R 2012/03/16 @kelp, n=500
+   M1: [[file:0316-1-md1.pdf]]
+   M1: [[file:0317-1-md1(2).pdf]]
+   M2: [[file:0317-2-md1.pdf]]
+   M3: [[file:0316-3-md1.pdf]]
+   M3: [[file:0317-3-md1(2).pdf]]
+   M4: [[file:0317-4-md1.pdf]]
+   M5: [[file:0317-5-md1.pdf]]
+
+   M5 quite bad, may check with mdzero=0 ? same. why ? 
+   seems like still not converge
+
+   try myheterptlm13.R ?  [[file:0317-pt13-5-md1.pdf]]
+
+   try to adjust M=6 or 7 , not log(n)/log(2) in HeterTPlm.R @tygro
+   2012/03/16, put 'M" and "mdzero" in prior parameter, n=500
+
+   M3: [[file:0316-3-md0-m6.pdf]]
+
+   just realize M5 is not wrong, since  2012/03/18
+   1+x1+x2 + (1-0.5x1+0.5x2)(2.67+e) 
+   = 3.67 + (1-2.67/2)x1 + (1+2.67/2)x2 + ...e
+
+   M3: n=1k, mdzero=0, maxm=log(n)/log(2), 10k save, 
+   [[file:0318-3-md0-10k.pdf]]
+
+   do n=1k, save=5000 again for M1-M5
+   [[file:0319-1.pdf]]
+   [[file:0319-2.pdf]]   
+   [[file:0319-3.pdf]]
+   [[file:0319-4.pdf]]
+   [[file:0319-5.pdf]]
+
+   guess M is too large, set maxm=6
+   [[file:0320-1.pdf]]
+   [[file:0320-2.pdf]]   
+   [[file:0320-3.pdf]]
+   [[file:0320-4.pdf]]
+   [[file:0320-5.pdf]]
+   
+   turn back to n=100, again, reproduce, maxm=6
+   [[file:0320-1-n100.pdf]]
+   [[file:0320-2-n100.pdf]]   
+   [[file:0320-3-n100.pdf]]
+   [[file:0320-4-n100.pdf]]
+   [[file:0320-5-n100.pdf]]
+   they are all mixing well 
+
+   previously, always set maxm=log_2(n), because syntax error on
+   if/else , shame. same with mdzero
+
+** DONE runs simulation M1-M5  , compare with quantreg		 :simulation:
+    M1: x\beta + N(0,1)
+    M2: x\beta + Gamma(3,1)
+    M3: x\beta + Mixture Normal
+    M4: x\beta + (1-0.5x_1 + 0.5x_2) Mixture normal
+    M5: x\beta + (1-0.5x_1 + 0.5x_2) Gamma(3,1)
+    
+    [[file:HeterPTlm-boot1.R]] n=100 boot = 100, nsave=10k
+    @whale , skate, drum, prawn, mackerel
+
+    [[file:RQboot1.R]]  very quick, just one click.
+
+MSE
+|-------+------------+------------------------------------|
+| Model |         rq |                          HeterPTlm |
+|-------+------------+------------------------------------|
+| M1.5  | 1.39(0.13) |                         1.06(0.12) |
+| M2.5  | 3.31(0.36) |                         3.18(0.35) |
+| M3.5  | 17.2(1.48) |                         2.21(0.30) |
+| M4.5  | 95.4(6.69) |                         9.87(1.09) |
+| M5.5  | 14.3(1.36) | 15.16(1.8); 10.0(1.04) outfile 5.1 |
+|-------+------------+------------------------------------|
+| M1.9  | 2.35(0.26) |                         2.07(0.23) |
+| M2.9  | 15.2(1.51) |                         13.5(1.61) |
+| M3.9  | 3.68(0.46) |  4.27(0.64) ;3.94(0.56) outfile3.1 |
+| M4.9  | 25.1(2.66) |                         14.8(1.41) |
+| M5.9  | 73.7(8.48) |             63.1(7.01); 60.2(8.14) |
+|-------+------------+------------------------------------|
+
+length b2
+|-------+------+-----------|
+| Model |   rq | HeterPTlm |
+|-------+------+-----------|
+| M1.5  | 0.40 |      0.46 |
+| M2.5  | 0.68 |      0.72 |
+| M3.5  | 1.43 |      0.62 |
+| M4.5  | 2.99 |      1.37 |
+| M5.5  | 1.36 |      1.24 |
+|-------+------+-----------|
+| M1.9  | 0.70 |      0.66 |
+| M2.9  | 1.59 |      1.52 |
+| M3.9  | 0.88 |      0.88 |
+| M4.9  | 1.56 |      1.52 |
+| M5.9  | 2.91 |      2.35 |
+|-------+------+-----------|
+
+length b3
+|-------+------+-----------|
+| Model |   rq | HeterPTlm |
+|-------+------+-----------|
+| M1.5  | 0.30 |      0.37 |
+| M2.5  | 0.53 |      0.55 |
+| M3.5  | 1.01 |      0.51 |
+| M4.5  | 2.39 |      1.29 |
+| M5.5  | 1.22 |      1.16 |
+|-------+------+-----------|
+| M1.9  | 0.86 |      0.53 |
+| M2.9  | 1.76 |      1.14 |
+| M3.9  | 1.02 |      0.74 |
+| M4.9  | 1.72 |      1.37 |
+| M5.9  | 3.28 |      2.17 |
+|-------+------+-----------|
+
+coverage prob
+|-------+------+-----------|
+| Model |   rq | HeterPTlm |
+|-------+------+-----------|
+| M1.5  | 0.82 |      0.93 |
+| M2.5  | 0.89 |      0.95 |
+| M3.5  | 0.85 |      0.95 |
+| M4.5  | 0.86 |      0.95 |
+| M5.5  | 0.89 |       0.9 |
+|-------+------+-----------|
+| M1.9  | 0.95 |      0.96 |
+| M2.9  |  0.9 |      0.89 |
+| M3.9  | 0.93 |      0.97 |
+| M4.9  | 0.88 |      0.94 |
+| M5.9  | 0.93 |      0.87 |
+|-------+------+-----------|
+
+
+** DONE write down specifically rigorously the proof for marginalized posterior quantile :report:
+*** QR, Heterogeneity
+*** PT
+**** Definition
+**** parameter choice
+**** mean or maginal of PT, cdf and pdf
+**** Update and conjugacy
+**** mixture of PT
+**** [ ] multivariate
+**** marginalized posterior / predictive cdf, and quantile function
+*** QR w/ PT
+** DONE consider code for choosing/changeing baseline measure in HeterPTlm.R
+   it's feasible, by using different .Fortran function in HeterPTlm.R
+   with pre-specified family
+
+* 2012-03-21
+** TODO revise ENAR slides
+** DONE finish the previous simulation
+** TODO check n=1k mixing , debug, heterptlm5.f, HeterPTlm3.R,
+     - rerun M3 on skate n=100, boot=100 , also M5
+     - check n=1k M2 on whale
+     - after debug my function, works better for M2, (n=500, 50k runs) 
+     - still bad for M5, seems small acceptence rate
+     - may due to large noise , by Arkendu, change prior ? foo2.3
+     - [ ] may because of (X'gamma) check
+     - compare to PTlm , for M2, n=500, runs=1k,
+       [[file:PTlm-500-1000.pdf]]
+     - add b~N(b, tune*(xtx)^-1(i)) , M2, n=500,
+       [[file:foo2.6.pdf]]
+     - increase tuning 0.1 on beta and gamma
+       [[file:foo2.7.pdf]]
+     - set max tuning =100 instead of 10
+     - guessing need to change MH rate criteror
+       [[file:mcmc.pdf]] mentioned 1/4 for high dim, 1/2 for dim 1 to 2
+       try to adjust acceptance rate to 1/2
+       not good on M4 foo4.4
+** TODO debug heterptlm3.f, correct right tuning and add ratesave tunesave, hetersave, add b~N(b, tune*(xtx)^-1(i))
+** TODO check biometrika paper 
+   - may apply to our model , think about it.
+   - multiple imputation with PT, paddock 2002
+   - check Bayesian , multiple imputation
+** TODO X=(1,x,x^2) , linearity in X, consider any X ?
+** DONE update with vector, not componentwisely, heterptlm4.f, and HeterPTlm2.R, testHeterPTlm2.R
+   propv 
+   time, n=100, nsave=1k, 26s
+   very very bad mixing on foo2, n=500, discard
+
+* 2012-03-28
+** Git
+*** DONE clean folder first [cance]
+*** TODO git push 
+    add agenda.org, heterptlm.f, HeterPTlm.R
+** check out Kozami 's paper 
