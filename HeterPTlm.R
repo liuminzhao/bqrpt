@@ -1,5 +1,5 @@
 ####################################################################
-# Time-stamp: <liuminzhao 03/30/2012 14:28:59>
+# Time-stamp: <liuminzhao 03/30/2012 14:45:45>
 #
 # 2012/03/29 wrap heterptlm.f,
 ####################################################################
@@ -173,6 +173,7 @@ HeterPTlm <- function(y, x, mcmc, prior, quan){
             betasave=betasave,
             gammasave=gammasave,
             quansave=quansave,
+            sigmasave=foo$sigmasave,
             dens=foo$f,
             grid=grid,
             mcmc=mcmc,
