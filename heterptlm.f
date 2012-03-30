@@ -273,8 +273,10 @@ C     likelihood
          
          
 C     log prior
-         logpriorc=-tau(1)*thetac - tau(2)*exp(-2*thetac)/2
-         logprioro=-tau(1)*theta-tau(2)*exp(-2*theta)/2
+C         logpriorc=-tau(1)*thetac - tau(2)*exp(-2*thetac)/2
+C         logprioro=-tau(1)*theta-tau(2)*exp(-2*theta)/2
+         logprioro=0.d0
+         logpriorc=0.d0
 
 C     acceptance
          ratio=loglikec + logpriorc -loglikeo -logprioro+
