@@ -1355,7 +1355,7 @@ coverage prob
    with pre-specified family
 
 * 2012-03-21
-** TODO revise ENAR slides
+** DONE revise ENAR slides
 ** DONE finish the previous simulation
 ** TODO check n=1k mixing , debug, heterptlm5.f, HeterPTlm3.R,
      - rerun M3 on skate n=100, boot=100 , also M5
@@ -1394,3 +1394,6 @@ coverage prob
     add agenda.org, heterptlm.f, HeterPTlm.R
 *** TODO branch vector 
 ** check out Kozami 's paper 
+** DONE revise ENAR slides
+** TODO n=1k mixing fix , after git , only HeterPTlm.R, and heterptlm.f 
+

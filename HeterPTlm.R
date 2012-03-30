@@ -1,5 +1,5 @@
 ####################################################################
-# Time-stamp: <liuminzhao 03/29/2012 16:54:28>
+# Time-stamp: <liuminzhao 03/30/2012 14:28:59>
 #
 # 2012/03/29 wrap heterptlm.f,
 ####################################################################
@@ -15,7 +15,7 @@
 ##' @return 
 ##' @author Minzhao Liu
 HeterPTlm <- function(y, x, mcmc, prior, quan){
-  dyn.load("heterptlm3.so")
+  dyn.load("heterptlm.so")
   ## DATA
   nrec <- length(y)
   p <- dim(x)[2]
@@ -66,7 +66,8 @@ HeterPTlm <- function(y, x, mcmc, prior, quan){
   ## DEBUG
   ratesave <- matrix(0, 100, 2*p+2)
   tunesave <- matrix(0, nburn, 2*p+2)
-  hetersave <- rep(0, nburn)
+#  hetersave <- rep(0, nburn)
+   hetersave <- matrix(0, nburn, p)
   propv <- solve(t(x)%*%x)
   ###############################################
 
@@ -166,7 +167,8 @@ HeterPTlm <- function(y, x, mcmc, prior, quan){
   ## DEBUG
   ratesave <- matrix(foo$ratesave, 100, 2*p+2)
   tunesave <- matrix(foo$tunesave, nburn, 2*p+2)
- 
+  hetersave <- matrix(foo$hetersave, nburn, p)
+  
   z <- list(coef=coef,
             betasave=betasave,
             gammasave=gammasave,
@@ -182,7 +184,7 @@ HeterPTlm <- function(y, x, mcmc, prior, quan){
             X=x,
             ratesave=ratesave,
             tunesave=tunesave,
-            hetersave=foo$hetersave
+            hetersave=hetersave
             )
 
   class(z) <- "HeterPTlm"

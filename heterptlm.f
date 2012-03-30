@@ -70,7 +70,7 @@ C     FUNCTION
 
 C     DEBUG
       real*8 ratesave(100, 2*p+2), tunesave(mcmc(1), 2*p+2)
-      real*8 hetersave(mcmc(1))
+      real*8 hetersave(mcmc(1), p)
 
 C     initial 
       nburn=mcmc(1)
@@ -199,6 +199,22 @@ c$$$C     GAMMA
                end do
                vc(k) = (y(k)-tmp1)/tmp2
             end do
+C     =============================================
+C     check if gammac makes X'gamma less than 0
+            if (iscan .lt. nburn) then 
+               tmp1=dble(100)
+               do j=1, nrec
+                  tmp2=0.d0
+                  do k=1,p
+                     tmp2=tmp2+x(j,k)*gammac(k)
+                  end do
+                  if (tmp2 .lt. tmp1) then 
+                     tmp1=tmp2
+                  end if
+               end do
+               hetersave(iscan, i)=tmp1
+            end if 
+C     =============================================
 
 C     log prior
             logpriorc=dnrm(gammac(i), gammapm(i), gammapv(i,i), 1)
@@ -415,17 +431,6 @@ C         print*, tune1
             tunesave(iscan, 7)=tune3
             tunesave(iscan, 8)=tune4
             
-            tmp1=dble(100)
-            do i=1, nrec
-               tmp2=0.d0
-               do j=1,p
-                  tmp2=tmp2+x(i,j)*gamma(j)
-               end do
-               if (tmp2 .lt. tmp1) then 
-                  tmp1=tmp2
-               end if
-            end do
-            hetersave(iscan)=tmp1
          end if 
 
          if (iscan.gt. nburn) then 
