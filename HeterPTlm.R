@@ -1,5 +1,5 @@
 ####################################################################
-# Time-stamp: <liuminzhao 03/30/2012 14:45:45>
+# Time-stamp: <liuminzhao 04/05/2012 13:25:28>
 #
 # 2012/03/29 wrap heterptlm.f,
 ####################################################################
@@ -67,78 +67,42 @@ HeterPTlm <- function(y, x, mcmc, prior, quan){
   ratesave <- matrix(0, 100, 2*p+2)
   tunesave <- matrix(0, nburn, 2*p+2)
 #  hetersave <- rep(0, nburn)
-   hetersave <- matrix(0, nburn, p)
+  hetersave <- matrix(0, nburn, p)
   propv <- solve(t(x)%*%x)
   ###############################################
 
-  ## foo <- .Fortran("heterptlm1",
-  ##                 nrec=as.integer(nrec),
-  ##                 p = as.integer(p),
-  ##                 x = as.double(x),
-  ##                 y = as.double(y),
-  ##                 maxm=as.integer(maxm),
-  ##                 mdzero=as.integer(mdzero),
-  ##                 betapm= as.double(betapm),
-  ##                 betapv = as.double(betapv),
-  ##                 gammapm= as.double(gammapm),
-  ##                 gammapv = as.double(gammapv),
-  ##                 tau = as.double(tau),
-  ##                 a0b0 = as.double(a0b0),
-  ##                 nsave = as.integer(nsave),
-  ##                 nskip = as.integer(nskip),
-  ##                 nburn= as.integer(nburn),
-  ##                 ndisp= as.integer(ndisp),
-  ##                 quan=as.double(quan),
-  ##                 nquan=as.integer(nquan),
-  ##                 betasave= as.double(betasave),
-  ##                 gammasave= as.double(gammasave),
-  ##                 quansave=as.double(quansave),
-  ##                 sigmasave=as.double(sigmasave),
-  ##                 alphasave=as.double(alphasave),
-  ##                 f=as.double(f),
-  ##                 ngrid=as.integer(ngrid),
-  ##                 grid=as.double(grid),
-  ##                 alpha = as.double(alpha),
-  ##                 beta = as.double(beta),
-  ##                 gamma = as.double(gamma),
-  ##                 sigma2 = as.double(sigma2),
-  ##                 v = as.double(v),
-  ##                 whicho=as.integer(whicho),
-  ##                 whichn=as.integer(whichn)
-  ##                 )
-
   foo <- .Fortran("heterptlm",
-           maxm=as.integer(maxm),
-           mdzero=as.integer(mdzero),
-           nrec=as.integer(nrec),
-           p = as.integer(p),
-           x = as.double(x),
-           y = as.double(y),
-           betapm= as.double(betapm),
-           betapv = as.double(betapv),
-           tau = as.double(tau),
-           betasave= as.double(betasave),
-           gammasave= as.double(gammasave),
-           gammapm = as.double(gammapm),
-           gammapv=as.double(gammapv),
-           alpha = as.double(alpha),
-           beta = as.double(beta),
-           gamma = as.double(gamma),
-           nsave = as.integer(nsave),
-           sigma2 = as.double(sigma2),
-           v = as.double(v),
-           a0b0=as.double(a0b0),
-           mcmc = as.integer(mcmc),
-           whicho=as.integer(whicho),
-           whichn=as.integer(whichn),
-           sigmasave=as.double(sigmasave),
-           alphasave=as.double(alphasave),
-           f=as.double(f),
-           ngrid=as.integer(ngrid),
-           grid=as.double(grid),
-           quan=as.double(quan),
-           quansave=as.double(quansave),
-           nquan=as.integer(nquan),
+                  maxm=as.integer(maxm),
+                  mdzero=as.integer(mdzero),
+                  nrec=as.integer(nrec),
+                  p = as.integer(p),
+                  x = as.double(x),
+                  y = as.double(y),
+                  betapm= as.double(betapm),
+                  betapv = as.double(betapv),
+                  tau = as.double(tau),
+                  betasave= as.double(betasave),
+                  gammasave= as.double(gammasave),
+                  gammapm = as.double(gammapm),
+                  gammapv=as.double(gammapv),
+                  alpha = as.double(alpha),
+                  beta = as.double(beta),
+                  gamma = as.double(gamma),
+                  nsave = as.integer(nsave),
+                  sigma2 = as.double(sigma2),
+                  v = as.double(v),
+                  a0b0=as.double(a0b0),
+                  mcmc = as.integer(mcmc),
+                  whicho=as.integer(whicho),
+                  whichn=as.integer(whichn),
+                  sigmasave=as.double(sigmasave),
+                  alphasave=as.double(alphasave),
+                  f=as.double(f),
+                  ngrid=as.integer(ngrid),
+                  grid=as.double(grid),
+                  quan=as.double(quan),
+                  quansave=as.double(quansave),
+                  nquan=as.integer(nquan),
                   ratesave=as.double(ratesave),
                   tunesave=as.double(tunesave),
                   hetersave=as.double(hetersave),
@@ -211,13 +175,18 @@ plot.HeterPTlm <- function(obj, ask=TRUE){
     plot(density(obj$gammasave[,i]), lwd=1.2, main=title2, xlab="values", ylab="density", col='red')
   }
 
+  title1 <- "Trace of sigma2"
+  title2 <- "Density of sigma2"
+  plot(obj$sigmasave, typ='l', main=title1, xlab="MCMC scan", ylab=" ")
+  plot(density(obj$sigmasave), lwd=1.2, main=title2, xlab="values", ylab="density", col='red')
+       
   title1 <- "Predictive Error Density"
   plot(obj$grid, obj$dens, ylab="density", main=title1, type='l', lwd=2, xlab="values")
 }
 
 ############################################################
 summary.HeterPTlm <- function(obj){
-  obj$coef
+  list(coef=obj$coef,n=obj$n, p=obj$p, quan=obj$quan, mcmc=obj$mcmc, prior=obj$prior)
 }
 ###########################################################
 bootsummary.HeterPTlm <- function(obj, truebetatau){
