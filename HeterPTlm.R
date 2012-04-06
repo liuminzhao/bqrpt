@@ -1,5 +1,5 @@
 ####################################################################
-# Time-stamp: <liuminzhao 04/06/2012 12:34:10>
+# Time-stamp: <liuminzhao 04/06/2012 13:47:18>
 #
 # 2012/03/29 wrap heterptlm.f,
 ####################################################################
@@ -186,7 +186,8 @@ plot.HeterPTlm <- function(obj, ask=TRUE){
 
 ############################################################
 summary.HeterPTlm <- function(obj){
-  list(coef=obj$coef,n=obj$n, p=obj$p, quan=obj$quan, mcmc=obj$mcmc, prior=obj$prior)
+#  list(coef=obj$coef,n=obj$n, p=obj$p, quan=obj$quan, mcmc=obj$mcmc, prior=obj$prior)
+  list(coef=obj$coef,n=obj$n, p=obj$p, quan=obj$quan)
 }
 ###########################################################
 bootsummary.HeterPTlm <- function(obj, truebetatau){
@@ -221,5 +222,9 @@ bootsummary.HeterPTlm <- function(obj, truebetatau){
   return(list(beta1=betatau.coef1, lbd1=lbd1, ubd1=ubd1, length1=len1, mse1=mse1, cover1=cover1,
               beta2=betatau.coef2, lbd2=lbd2, ubd2=ubd2, length2=len2, mse2=mse2, cover2=cover2))
 
+  
+}
+#############################################################
+Diagnose.HeterPTlm <- function(obj){
   
 }
