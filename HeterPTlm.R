@@ -1,5 +1,5 @@
 ####################################################################
-# Time-stamp: <liuminzhao 04/06/2012 11:03:16>
+# Time-stamp: <liuminzhao 04/06/2012 12:34:10>
 #
 # 2012/03/29 wrap heterptlm.f,
 ####################################################################
@@ -129,7 +129,7 @@ HeterPTlm <- function(y, x, mcmc, prior, quan){
   coef <- list(beta=coef.beta, gamma=coef.gamma, quan=coef.quan,betatau=coef.betatau)
 
   ## DEBUG
-  ratesave <- matrix(foo$ratesave, 100, 2*p+2)
+  ratesave <- matrix(foo$ratesave, nburn/100, 2*p+2)
   tunesave <- matrix(foo$tunesave, nburn, 2*p+2)
   hetersave <- matrix(foo$hetersave, nburn, p)
   

@@ -69,7 +69,7 @@ C     FUNCTION
       real*8 myrnorm,myrunif, dnrm, dgamma2
 
 C     DEBUG
-      real*8 ratesave(floor(dble(mcmc(1))/dble(100)), 2*p+2)
+      real*8 ratesave(200, 2*p+2)
       real*8 tunesave(mcmc(1), 2*p+2)
       real*8 hetersave(mcmc(1), p)
 
@@ -320,7 +320,7 @@ C     acceptance
 C     ===================================================
 C     TUNING 
 
-         if ((att1(1).gt.100).and.(iscan.lt. nburn)) then 
+         if ((att1(1).ge.100).and.(iscan.le. nburn)) then 
             do i=1, p
 C               if (dble(acc1(i))/dble(att1(i)) .gt. 0.25d0) then 
                if (dble(acc1(i))/dble(att1(i)) .gt. 0.5d0) then 
