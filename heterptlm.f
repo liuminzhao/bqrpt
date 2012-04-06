@@ -69,7 +69,8 @@ C     FUNCTION
       real*8 myrnorm,myrunif, dnrm, dgamma2
 
 C     DEBUG
-      real*8 ratesave(100, 2*p+2), tunesave(mcmc(1), 2*p+2)
+      real*8 ratesave(floor(dble(mcmc(1))/dble(100)), 2*p+2)
+      real*8 tunesave(mcmc(1), 2*p+2)
       real*8 hetersave(mcmc(1), p)
 
 C     initial 

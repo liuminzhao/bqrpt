@@ -1,5 +1,5 @@
 ####################################################################
-# Time-stamp: <liuminzhao 04/05/2012 13:25:28>
+# Time-stamp: <liuminzhao 04/06/2012 11:03:16>
 #
 # 2012/03/29 wrap heterptlm.f,
 ####################################################################
@@ -64,7 +64,7 @@ HeterPTlm <- function(y, x, mcmc, prior, quan){
   whicho <- whichn <- rep(0, n)
 
   ## DEBUG
-  ratesave <- matrix(0, 100, 2*p+2)
+  ratesave <- matrix(0, nburn/100, 2*p+2)
   tunesave <- matrix(0, nburn, 2*p+2)
 #  hetersave <- rep(0, nburn)
   hetersave <- matrix(0, nburn, p)
