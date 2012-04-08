@@ -1422,4 +1422,6 @@ MSE
    if you believe after burn-in part, everything is from the true
    posterior distribution
 ** DONE check ACF function, wrap it into Diagnose function
-** for n=100, M1 , heter is bad, 
+** TODO [HETER] 
+   - for n=100, M1 , heter is bad, [[file:/20120408.pdf]], re-test
+   - revise heterptlm.f , discard gammac when (x'gammac<0)

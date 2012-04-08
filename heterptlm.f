@@ -191,70 +191,90 @@ c$$$C     GAMMA
             end do
             gammac(i) = myrnorm(gamma(i), tune2(i)*sqrt(propv(i,i)))
             gammac(1)=1
-            do k = 1, nrec
-               tmp1=0.d0
+
+C     ==================================
+C     check min(x'gammac)>0
+            
+            tmp1=dble(100)
+            do j=1, nrec
                tmp2=0.d0
-               do j = 1,p
-                  tmp1= tmp1+x(k,j)*beta(j)
-                  tmp2= tmp2+x(k,j)*gammac(j)
+               do k=1,p
+                  tmp2=tmp2+x(j,k)*gammac(k)
                end do
-               vc(k) = (y(k)-tmp1)/tmp2
+               if (tmp2 .lt. tmp1) then 
+                  tmp1=tmp2
+               end if
             end do
+C     ==================================
+C     take gammac only when min(x'gammac) >0 
+C            print*, tmp1
+            if (tmp1 .gt. 0.d0) then 
+               do k = 1, nrec
+                  tmp1=0.d0
+                  tmp2=0.d0
+                  do j = 1,p
+                     tmp1= tmp1+x(k,j)*beta(j)
+                     tmp2= tmp2+x(k,j)*gammac(j)
+                  end do
+                  vc(k) = (y(k)-tmp1)/tmp2
+               end do
 C     =============================================
 C     check if gammac makes X'gamma less than 0
-            if (iscan .lt. nburn) then 
-               tmp1=dble(100)
-               do j=1, nrec
-                  tmp2=0.d0
-                  do k=1,p
-                     tmp2=tmp2+x(j,k)*gammac(k)
+               if (iscan .lt. nburn) then 
+                  tmp1=dble(100)
+                  do j=1, nrec
+                     tmp2=0.d0
+                     do k=1,p
+                        tmp2=tmp2+x(j,k)*gammac(k)
+                     end do
+                     if (tmp2 .lt. tmp1) then 
+                        tmp1=tmp2
+                     end if
                   end do
-                  if (tmp2 .lt. tmp1) then 
-                     tmp1=tmp2
-                  end if
-               end do
-               hetersave(iscan, i)=tmp1
-            end if 
+                  hetersave(iscan, i)=tmp1
+               end if 
 C     =============================================
-
+               
 C     log prior
-            logpriorc=dnrm(gammac(i), gammapm(i), gammapv(i,i), 1)
-            logprioro=dnrm(gamma(i), gammapm(i), gammapv(i,i), 1)
-
+               logpriorc=dnrm(gammac(i), gammapm(i), gammapv(i,i), 1)
+               logprioro=dnrm(gamma(i), gammapm(i), gammapv(i,i), 1)
+               
 C     log likelihood
-
-            loglikec=0.d0
-            call loglik_unippt(nrec,mdzero, maxm, alpha, mu, sigma2, vc,
-     &           whicho, whichn, loglikec)
-
+               
+               loglikec=0.d0
+          call loglik_unippt(nrec,mdzero, maxm, alpha, mu,
+     &              sigma2, vc, whicho, whichn, loglikec)
+               
 C     additional loglike 
-            loglikaddc=0.d0
-            loglikaddo=0.d0
-
-            do k=1, nrec
-               tmp1=0.d0
-               tmp2=0.d0
-               do j=1,p
-                  tmp1=tmp1+x(k,j)*gammac(j)
-                  tmp2=tmp2+x(k,j)*gamma(j)
-               end do
-               loglikaddc=loglikaddc+log(tmp1)
-               loglikaddo=loglikaddo+log(tmp2)
-            end do
-            
-C     acceptance step
-            ratio=loglikec + logpriorc - loglikeo- logprioro - 
-     &           loglikaddc + loglikaddo
-
-            if (log(dble(myrunif(0.d0, 1.d0))).lt. ratio) then 
-               loglikeo=loglikec
-               gamma(i)=gammac(i)
-               gamma(1)=1
+               loglikaddc=0.d0
+               loglikaddo=0.d0
+               
                do k=1, nrec
-                  v(k) = vc(k)
+                  tmp1=0.d0
+                  tmp2=0.d0
+                  do j=1,p
+                     tmp1=tmp1+x(k,j)*gammac(j)
+                     tmp2=tmp2+x(k,j)*gamma(j)
+                  end do
+                  loglikaddc=loglikaddc+log(tmp1)
+                  loglikaddo=loglikaddo+log(tmp2)
                end do
-               acc2(i)=acc2(i)+1
-            end if
+               
+C     acceptance step
+               ratio=loglikec + logpriorc - loglikeo- logprioro - 
+     &              loglikaddc + loglikaddo
+
+               
+               if (log(dble(myrunif(0.d0, 1.d0))).lt. ratio) then 
+                  loglikeo=loglikec
+                  gamma(i)=gammac(i)
+                  gamma(1)=1
+                  do k=1, nrec
+                     v(k) = vc(k)
+                  end do
+                  acc2(i)=acc2(i)+1
+               end if
+            end if               
          end do
 C     =============================================================
 C     SIGMA 

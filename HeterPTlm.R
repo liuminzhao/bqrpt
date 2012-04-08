@@ -1,5 +1,5 @@
 ####################################################################
-# Time-stamp: <liuminzhao 04/07/2012 17:19:34>
+# Time-stamp: <liuminzhao 04/08/2012 12:49:29>
 #
 # 2012/03/29 wrap heterptlm.f,
 ####################################################################
@@ -159,7 +159,7 @@ HeterPTlm <- function(y, x, mcmc, prior, quan){
 
 
 ############################################################
-plot.HeterPTlm <- function(obj, ask=TRUE){
+plot.HeterPTlm <- function(obj, ask=FALSE){
   par(mfrow=c(obj$p, 2),ask=ask)
   for (i in 1:obj$p){
     title1 <- paste("Trace of beta" , i-1, sep=" ")
@@ -228,23 +228,23 @@ bootsummary.HeterPTlm <- function(obj, truebetatau){
 Diagnose.HeterPTlm <- function(obj, ask=FALSE){
   par(mfrow=c(4,4))
   for (i in 1:8){
-    plot(foo$tunesave[,i],cex=0.5)
-    plot(foo$ratesave[,i],cex=0.5)
+    plot(obj$tunesave[,i],cex=0.5)
+    plot(obj$ratesave[,i],cex=0.5)
   }
 
   par(mfrow=c(2,2))
-  plot(foo$hetersave[,2],type='l')
-  plot(foo$hetersave[,3],type='l')
-  plot(foo$sigmasave,type='l')
+  plot(obj$hetersave[,2],type='l')
+  plot(obj$hetersave[,3],type='l')
+  plot(obj$sigmasave,type='l')
 
   # auto correlation
   par(mfrow=c(2,3))
   for (i in 1:p){
-    acf(foo$betasave[,i])
+    acf(obj$betasave[,i])
   }
   for (i in 2:p){
-    acf(foo$gammasave[,i])
+    acf(obj$gammasave[,i])
   }
-  acf(foo$sigmasave)
+  acf(obj$sigmasave)
   
 }
