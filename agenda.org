@@ -1423,5 +1423,6 @@ MSE
    posterior distribution
 ** DONE check ACF function, wrap it into Diagnose function
 ** TODO [HETER] 
-   - for n=100, M1 , heter is bad, [[file:/20120408.pdf]], re-test
+   - for n=100, M1 , heter is fine , [[file:20120408.pdf]], re-test
    - revise heterptlm.f , discard gammac when (x'gammac<0)
+   - BQRiid.R min(X'gammac) , M1, n=100, [[file:BQRheter.pdf]]

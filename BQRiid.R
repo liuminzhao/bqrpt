@@ -52,6 +52,7 @@ BayesQReg<-function(y,X,tau=0.5,M=10,
 
   #keep track of stuff
   keepbeta<-keepgamma<-matrix(0,runs,p)
+  keepheter <- matrix(0, runs,p)
   TruncProb<-rep(0,n)
   x.grid<-seq(-20,20,0.01)
   sumdense<-sumdense2<-0*x.grid
@@ -75,6 +76,7 @@ BayesQReg<-function(y,X,tau=0.5,M=10,
       att[6]<-att[6]+1
       cangamma<-gamma;cangamma[s]<-rnorm(1,gamma[s],2*can[6])
       cansigh<-as.vector(X%*%cangamma)
+      keepheter[i, s] <- min(cansigh)
       if(min(cansigh)>0){
         MHrate<-sum(dnorm(resids,cansigh*mmm,cansigh*sss,log=T)-
                     dnorm(resids,sigh*mmm,sigh*sss,log=T))+
@@ -208,7 +210,9 @@ BayesQReg<-function(y,X,tau=0.5,M=10,
 
 list(beta=keepbeta,gamma=keepgamma,
     TruncProb=TruncProb,
-    x.grid=x.grid,dense.mn=sumdense,dense.var=sumdense2-sumdense^2)}
+    x.grid=x.grid,dense.mn=sumdense,dense.var=sumdense2-sumdense^2,
+     heter=keepheter)
+}
 
 
 #define other functions called by BayesQReg:
