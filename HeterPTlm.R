@@ -1,5 +1,5 @@
 ####################################################################
-# Time-stamp: <liuminzhao 04/06/2012 13:47:18>
+# Time-stamp: <liuminzhao 04/07/2012 17:19:34>
 #
 # 2012/03/29 wrap heterptlm.f,
 ####################################################################
@@ -225,6 +225,26 @@ bootsummary.HeterPTlm <- function(obj, truebetatau){
   
 }
 #############################################################
-Diagnose.HeterPTlm <- function(obj){
+Diagnose.HeterPTlm <- function(obj, ask=FALSE){
+  par(mfrow=c(4,4))
+  for (i in 1:8){
+    plot(foo$tunesave[,i],cex=0.5)
+    plot(foo$ratesave[,i],cex=0.5)
+  }
+
+  par(mfrow=c(2,2))
+  plot(foo$hetersave[,2],type='l')
+  plot(foo$hetersave[,3],type='l')
+  plot(foo$sigmasave,type='l')
+
+  # auto correlation
+  par(mfrow=c(2,3))
+  for (i in 1:p){
+    acf(foo$betasave[,i])
+  }
+  for (i in 2:p){
+    acf(foo$gammasave[,i])
+  }
+  acf(foo$sigmasave)
   
 }

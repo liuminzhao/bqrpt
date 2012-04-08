@@ -1421,4 +1421,5 @@ MSE
    since discarding samples is not efficient,
    if you believe after burn-in part, everything is from the true
    posterior distribution
-** TODO 
+** DONE check ACF function, wrap it into Diagnose function
+** for n=100, M1 , heter is bad, 
