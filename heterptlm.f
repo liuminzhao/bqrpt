@@ -7,7 +7,7 @@ c==========================================================
      &     propv)
 c===========================================================
 c$$$
-C          Time-stamp: <liuminzhao 03/26/2012 13:37:32>
+C$$$      Time-stamp: <liuminzhao 03/26/2012 13:37:32>
 c$$$      
 c$$$      2012/03/26 set back to 0 for acc* when tuning 
 C         add ratesave(100, 2p-1), tunesave(nburn, 2p-1)

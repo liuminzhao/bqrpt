@@ -1,5 +1,5 @@
 ####################################################################
-# Time-stamp: <liuminzhao 04/09/2012 10:35:05>
+# Time-stamp: <liuminzhao 04/09/2012 11:30:27>
 #
 # 2012/03/29 wrap heterptlm.f,
 ####################################################################
@@ -149,7 +149,8 @@ HeterPTlm <- function(y, x, mcmc, prior, quan){
             X=x,
             ratesave=ratesave,
             tunesave=tunesave,
-            hetersave=hetersave
+            hetersave=hetersave,
+            alphasave=foo$alphasave
             )
 
   class(z) <- "HeterPTlm"
@@ -179,6 +180,11 @@ plot.HeterPTlm <- function(obj, ask=FALSE){
   title2 <- "Density of sigma2"
   plot(obj$sigmasave, typ='l', main=title1, xlab="MCMC scan", ylab=" ")
   plot(density(obj$sigmasave), lwd=1.2, main=title2, xlab="values", ylab="density", col='red')
+
+  title1 <- "Trace of alpha"
+  title2 <- "Density of alpha"
+  plot(obj$alphasave, typ='l', main=title1, xlab="MCMC scan", ylab=" ")
+  plot(density(obj$alphasave), lwd=1.2, main=title2, xlab="values", ylab="density", col='red')
        
   title1 <- "Predictive Error Density"
   plot(obj$grid, obj$dens, ylab="density", main=title1, type='l', lwd=2, xlab="values")
@@ -236,6 +242,7 @@ Diagnose.HeterPTlm <- function(obj, ask=FALSE){
   plot(obj$hetersave[,2],type='l')
   plot(obj$hetersave[,3],type='l')
   plot(obj$sigmasave,type='l')
+  plot(obj$alphasave,type='l')
 
   # auto correlation
   par(mfrow=c(2,3))
