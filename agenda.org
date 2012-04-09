@@ -1392,13 +1392,13 @@ coverage prob
 *** DONE clean folder first [cancel]
 *** DONE git push 
     add agenda.org, heterptlm.f, HeterPTlm.R
-*** TODO branch vector 
-** check out Kozami 's paper 
+*** DONE branch vector [cancel]
+** TODO check out Kozami 's paper 
 ** DONE revise ENAR slides
 ** TODO n=1k mixing fix , after git , only HeterPTlm.R, and heterptlm.f , add sigmasave
 *** TODO set nskip=1, check loglik, 
 *** TODO using new heterptlm.f check other 5 model 
-** DONE simulation M5 heter gamma on BQRboot6.R, [[file:/outfile-bqr-5]]
+** DONE simulation M5 heter gamma on BQRboot6.R, [[file:outfile-bqr-5]]
 MSE
 |-------+------------+------------------------------------+------------|
 | Model |         rq |                          HeterPTlm |        BQR |
@@ -1424,5 +1424,30 @@ MSE
 ** DONE check ACF function, wrap it into Diagnose function
 ** TODO [HETER] 
    - for n=100, M1 , heter is fine , [[file:20120408.pdf]], re-test
+     M2, [[file:20120408-m2.pdf]]
    - revise heterptlm.f , discard gammac when (x'gammac<0)
-   - BQRiid.R min(X'gammac) , M1, n=100, [[file:BQRheter.pdf]]
+   - BQRiid.R modified min(X'gammac) , M1, n=100, [[file:BQRheter.pdf]]
+     [[file:20120408-bqr-m1.pdf]]
+     m2 [[file:20120408-bqr-m2.pdf]]
+** TODO [ACF]
+** TODO [acceptance rate] 0.4 ?
+** TODO diagnose M1-5, n=100, arate=0.4, 
+   [[file:20120408.pdf]]
+   [[file:20120408-m2.pdf]]
+   [[file:20120408-m3.pdf]]
+   [[file:20120408-m4.pdf]]
+   [[file:20120408-m5.pdf]]
+
+   BQRiid: tau=0.5
+   [[file:20120408-bqr-m1.pdf]]
+   [[file:20120408-bqr-m2.pdf]]
+   [[file:20120408-bqr-m3.pdf]]
+   [[file:20120408-bqr-m4.pdf]]
+   [[file:20120408-bqr-m5.pdf]]
+
+   PTlm: tau=0.5
+   [[file:20120409-ptlm-m1.pdf]]
+   [[file:20120409-ptlm-m2.pdf]]
+   [[file:20120409-ptlm-m3.pdf]]
+   [[file:20120409-ptlm-m4.pdf]]
+   [[file:20120409-ptlm-m5.pdf]]

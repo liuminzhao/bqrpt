@@ -1,5 +1,5 @@
 ####################################################################
-# Time-stamp: <liuminzhao 04/08/2012 12:49:29>
+# Time-stamp: <liuminzhao 04/09/2012 10:35:05>
 #
 # 2012/03/29 wrap heterptlm.f,
 ####################################################################
@@ -107,7 +107,7 @@ HeterPTlm <- function(y, x, mcmc, prior, quan){
                   tunesave=as.double(tunesave),
                   hetersave=as.double(hetersave),
                   propv=as.double(propv)
-           )
+                  )
   
     #################################################
   betasave <- matrix(foo$betasave, nsave, p)

@@ -219,7 +219,7 @@ C            print*, tmp1
                   vc(k) = (y(k)-tmp1)/tmp2
                end do
 C     =============================================
-C     check if gammac makes X'gamma less than 0
+C     record   X'gamma in hetersave 
                if (iscan .lt. nburn) then 
                   tmp1=dble(100)
                   do j=1, nrec
