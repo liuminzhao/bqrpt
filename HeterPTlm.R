@@ -1,5 +1,5 @@
 ####################################################################
-# Time-stamp: <liuminzhao 04/09/2012 11:30:27>
+# Time-stamp: <liuminzhao 04/09/2012 14:31:38>
 #
 # 2012/03/29 wrap heterptlm.f,
 ####################################################################
@@ -38,7 +38,8 @@ HeterPTlm <- function(y, x, mcmc, prior, quan){
   nskip <- mcmc$nskip
   nburn <- mcmc$nburn
   ndisp <- mcmc$ndisp
-
+  arate <- mcmc$arate
+  
   ## QUAN
   quan <- quan
   nquan <- length(quan)
@@ -106,7 +107,8 @@ HeterPTlm <- function(y, x, mcmc, prior, quan){
                   ratesave=as.double(ratesave),
                   tunesave=as.double(tunesave),
                   hetersave=as.double(hetersave),
-                  propv=as.double(propv)
+                  propv=as.double(propv),
+                  arate=as.double(arate)
                   )
   
     #################################################

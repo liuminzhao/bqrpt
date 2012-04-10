@@ -4,7 +4,7 @@ c==========================================================
      &     nsave, sigma2, v, a0b0, mcmc, whicho, whichn, 
      &     sigmasave, alphasave, f, ngrid,grid, quan, quansave, nquan,
      &     ratesave, tunesave, hetersave,
-     &     propv)
+     &     propv, arate)
 c===========================================================
 c$$$
 C$$$      Time-stamp: <liuminzhao 03/26/2012 13:37:32>
@@ -72,7 +72,7 @@ C     DEBUG
       real*8 ratesave(200, 2*p+2)
       real*8 tunesave(mcmc(1), 2*p+2)
       real*8 hetersave(mcmc(1), p)
-
+      real*8 arate
 C     initial 
       nburn=mcmc(1)
       nskip=mcmc(2)
@@ -343,7 +343,7 @@ C     TUNING
          if ((att1(1).ge.100).and.(iscan.le. nburn)) then 
             do i=1, p
 C               if (dble(acc1(i))/dble(att1(i)) .gt. 0.25d0) then 
-               if (dble(acc1(i))/dble(att1(i)) .gt. 0.4d0) then 
+               if (dble(acc1(i))/dble(att1(i)) .gt. arate) then 
                   tune1(i)=tune1(i) + 
      &                 min(0.1d0,dble(10)/sqrt(dble(iscan)))
                  else
@@ -360,7 +360,7 @@ C               if (dble(acc1(i))/dble(att1(i)) .gt. 0.25d0) then
                end if
 
 C               if (dble(acc2(i))/dble(att2(i)) .gt. 0.25d0) then 
-               if (dble(acc2(i))/dble(att2(i)) .gt. 0.4d0) then 
+               if (dble(acc2(i))/dble(att2(i)) .gt. arate) then 
                   tune2(i)=tune2(i) + 
      &                 min(0.1d0,dble(10)/sqrt(dble(iscan)))
                  else
@@ -390,7 +390,7 @@ C     SET UP TO 0
             end do 
 
 C            if (dble(acc3)/dble(att3) .gt. 0.25d0) then 
-            if (dble(acc3)/dble(att3) .gt. 0.4d0) then 
+            if (dble(acc3)/dble(att3) .gt. arate) then 
                tune3=tune3 + 
      &              min(0.01d0,dble(10)/sqrt(dble(iscan)))
             else
@@ -408,7 +408,7 @@ C            if (dble(acc3)/dble(att3) .gt. 0.25d0) then
             end if
 
 C            if (dble(acc4)/dble(att4) .gt. 0.25d0) then 
-            if (dble(acc4)/dble(att4) .gt. 0.4d0) then 
+            if (dble(acc4)/dble(att4) .gt. arate) then 
                tune4=tune4 + 
 C     &              min(0.01d0,dble(10)/sqrt(dble(iscan)))
      &              min(0.1d0,dble(10)/sqrt(dble(iscan)))

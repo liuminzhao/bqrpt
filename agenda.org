@@ -837,7 +837,7 @@ no distribution assumption for error in the conclusion part /?
     - see 20120201-report.pdf
 ** for my model, we can get beta(tau) for several tau simultaneously, while for ASL, quantreg and Reich BQR,  they need to fit separate model 
 ** Literature:
-*** RUbbery Polya Tree 
+*** RUbbery Polya Tree , Nieto, 
     We propose a generalization of the PT that reduces the undesirable
     sensitivity to the choice of Π. To reduce the impact of the partition
     on statistical inference, we allow the random variables  to be
@@ -1422,16 +1422,16 @@ MSE
    if you believe after burn-in part, everything is from the true
    posterior distribution
 ** DONE check ACF function, wrap it into Diagnose function
-** TODO [HETER] 
+** DONE [HETER] 
    - for n=100, M1 , heter is fine , [[file:20120408.pdf]], re-test
      M2, [[file:20120408-m2.pdf]]
    - revise heterptlm.f , discard gammac when (x'gammac<0)
    - BQRiid.R modified min(X'gammac) , M1, n=100, [[file:BQRheter.pdf]]
      [[file:20120408-bqr-m1.pdf]]
      m2 [[file:20120408-bqr-m2.pdf]]
-** TODO [ACF]
-** TODO [acceptance rate] 0.4 ?
-** TODO diagnose M1-5, n=100, arate=0.4, 
+** DONE [ACF]
+** DONE [acceptance rate] 0.4 ?
+** DONE diagnose M1-5, n=100, arate=0.4, 
    [[file:20120408.pdf]]
    [[file:20120408-m2.pdf]]
    [[file:20120408-m3.pdf]]
@@ -1451,3 +1451,11 @@ MSE
    [[file:20120409-ptlm-m3.pdf]]
    [[file:20120409-ptlm-m4.pdf]]
    [[file:20120409-ptlm-m5.pdf]]
+** TODO change candidate distribution for alpha and sigma to Normal w/ truncated
+   git branch newcand
+   N(sigma, tune)*I(0,20)
+
+   seems not good as previous one. want to change back 
+** TODO check out posterior property from rPT
+** TODO think about missing data 
+** DONE add arate in heterptlm.f 
