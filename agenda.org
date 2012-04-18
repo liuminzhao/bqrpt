@@ -1377,7 +1377,7 @@ coverage prob
        not good on M4 foo4.4
        rate->0.2 foo4.5
 ** TODO debug heterptlm3.f, correct right tuning and add ratesave tunesave, hetersave, add b~N(b, tune*(xtx)^-1(i))
-** TODO check biometrika paper 
+** DONE check biometrika paper 
    - may apply to our model , think about it.
    - multiple imputation with PT, paddock 2002
    - check Bayesian , multiple imputation
@@ -1393,11 +1393,11 @@ coverage prob
 *** DONE git push 
     add agenda.org, heterptlm.f, HeterPTlm.R
 *** DONE branch vector [cancel]
-** TODO check out Kozami 's paper 
+** DONE check out Kozami 's paper 4-17
 ** DONE revise ENAR slides
 ** TODO n=1k mixing fix , after git , only HeterPTlm.R, and heterptlm.f , add sigmasave
 *** TODO set nskip=1, check loglik, 
-*** TODO using new heterptlm.f check other 5 model 
+*** DONE using new heterptlm.f check other 5 model 
 ** DONE simulation M5 heter gamma on BQRboot6.R, [[file:outfile-bqr-5]]
 MSE
 |-------+------------+------------------------------------+------------|
@@ -1416,8 +1416,8 @@ MSE
 | M5.9  | 73.7(8.48) |             63.1(7.01); 60.2(8.14) | 40.4(4.00) |
 |-------+------------+------------------------------------+------------|
 
-* 2012-04-04 ENAR 
-** TODO no thining, brad does not recommend thining, check mixing with no thining
+* 2012-04-04 ENAR [[file:20120417-report.pdf]] [[file:20120417-report-supp.tex]]
+** DONE no thining, brad does not recommend thining, check mixing with no thining
    since discarding samples is not efficient,
    if you believe after burn-in part, everything is from the true
    posterior distribution
@@ -1431,6 +1431,7 @@ MSE
      m2 [[file:20120408-bqr-m2.pdf]]
 ** DONE [ACF]
 ** DONE [acceptance rate] 0.4 ?
+   [[file:mcmc.pdf]] Page 29 mentioned 1/4 for high dim, 1/2 for dim 1 to 2
 ** DONE diagnose M1-5, n=100, arate=0.4, 
    [[file:20120408.pdf]]
    [[file:20120408-m2.pdf]]
@@ -1451,7 +1452,7 @@ MSE
    [[file:20120409-ptlm-m3.pdf]]
    [[file:20120409-ptlm-m4.pdf]]
    [[file:20120409-ptlm-m5.pdf]]
-** TODO change candidate distribution for alpha and sigma to Normal w/ truncated
+** DONE change candidate distribution for alpha and sigma to Normal w/ truncated
    git branch newcand
    N(sigma, tune)*I(0,20)
 
@@ -1459,3 +1460,161 @@ MSE
 ** TODO check out posterior property from rPT
 ** TODO think about missing data 
 ** DONE add arate in heterptlm.f 
+** Thining = 20 much better than thining=10 , acf is small for M2 n=100
+** n=500 , X random, not (1,x1,x1^2) foo2 bad , foo3 fine , foo4 bad 
+** DONE M1-M5 n=500 , X=(1,x1,x2)
+   [[file:20120413-m1.pdf]]
+   [[file:20120413-m2.pdf]]
+   [[file:20120413-m3.pdf]]
+   [[file:20120413-m4.pdf]]
+   [[file:20120413-m5.pdf]]
+
+** DONE test n=500 PTdensity , gamma and normal [[file:test-ptdensity.R]]
+   M=8 is quite different with M=6 [[file:maxm6-gamma.pdf]] [[file:maxm8-gamma.pdf]]
+   M=8 much more wiggler , M=6 smooth
+   M=9 even more wiggler 
+   for mixture noral: [[file:maxm6-normal.pdf]] 
+   [[file:maxm8-normal.pdf]]
+** DONE try M=6 on n=500 gamma M2
+   still not good on mixing , acf large
+   - [X] try M3, 
+   - [ ] try arate=0.4 on M2 ? 
+   - M=6 for n=500, M2, M3 not good as M=8 (default), try M=9 ? 
+     record figure 
+** DONE simulation for boot=10, on M1-5 , compare with BQR	 :simulation:
+   - PT M1-5 @whale
+   - BQR  M1, M2, @mackerel 
+
+   - BQRboot2 -> M3 bqrboot7.R -> M2
+     bqrboot4 M4, bqrboot6 M5
+
+     outfile-bqr-0413-m1
+     outfile-pt-0413-m1
+
+   MSE
+|-------+---------------+-------------|
+| Model |           BQR |          PT |
+|-------+---------------+-------------|
+| M1.5  |    0.66(0.05) |  0.96(0.07) |
+| M2.5  | 163.26(1.95)* |  4.77(0.23) |
+| M3.5  |    1.87(0.18) |  2.06(0.25) |
+| M4.5  |    16.5(1.90) |  6.29(0.86) |
+| M5.5  |    13.9(1.39) |  15.5(1.86) |
+|-------+---------------+-------------|
+| M1.9  |    2.77(0.29) |  1.30(0.09) |
+| M2.9  | 642.15(9.87)* |  17.2(1.16) |
+| M3.9  |    2.15(0.27) |  4.56(0.64) |
+| M4.9  |    12.4(1.44) | 14.88(2.76) |
+| M5.9  |    85.2(7.84) |  67.2(8.82) |
+|-------+---------------+-------------|
+   *: WRONG 
+
+   seems like going to beat BQR in some model , try boot=100 on
+   weekend 
+** DONE simulation for boot=100, M1-M5, mcmc more , compete with BQR, :simulation:
+   - PT M1-3 @whale
+   - PT M4-5 @mackerel
+     outfile-pt-0414-m1
+
+   - BQR M1-M2 @prawn
+   - BQR M3-5 @skate
+     outfile-bqr-0414-m1
+
+     M1: standard normal
+     M2: gamma(3,1)
+     M3: mixture normal
+     M4: heter mixture normal
+     M5: heter gamma(3,1)
+
+     heter=c(1, -0.5, 0.5)
+
+   MSE
+|-------+------------+---------------|
+| Model |        BQR | PT            |
+|-------+------------+---------------|
+| M1.5  | 0.96(0.10) | 0.96(0.09)*   |
+| M2.5  | 2.08(0.36) | 2.72(0.33)    |
+| M3.5  |  4.09(0.5) | 1.89(0.26)*   |
+| M4.5  | 13.1(1.73) | 8.83(0.96)*   |
+| M5.5  | 12.2(1.41) | 13.1(1.65)    |
+|-------+------------+---------------|
+| M1.9  | 1.96(0.25) | 1.79(0.17)*   |
+| M2.9  | 10.4(1.77) | 14.6(1.87)    |
+| M3.9  | 4.32(0.54) | 3.83(0.49)*   |
+| M4.9  | 12.5(1.32) | 14.06(1.39)** |
+| M5.9  | 47.7(6.65) | 61.7(7.18)    |
+|-------+------------+---------------|
+
+   comments: win on normal, mixture normal, ** except heter mixture
+   normal 
+
+   comments2: compare with simulation on 03-28, beat rq for all model.
+
+** DONE simulation on ASL model Homo @whale
+   [[file:HeterPTlm-boot-asl.R]] outfile-pt-0414-asl
+   [[file:BQRboot3-asl.R]] outfile-bqr-0414-asl
+
+   MSE: homo ASL 
+|--------+------------+------------|
+| Model: |        BQR |         PT |
+|--------+------------+------------|
+| ASL.5  | 1.20(0.17) | 1.79(0.24) |
+| ASL.9  | 4.76(0.65) | 6.07(0.81) |
+|--------+------------+------------|
+
+** DONE change heter parameter to get case when our method dominates for Mixture normal @mackerel
+   M4: (1-x1+x2)*e4 HeterPTlm-boot4.R outfile-pt-0414-m4-2
+   M4: BQRboot4.R outfile-bqr-0414-m4-2
+
+   MSE: (1-x1+x2)*e4 , mixture normal, 
+|--------+------------+------------|
+| Model: |        BQR |         PT |
+|--------+------------+------------|
+| M4.5   | 33.9(4.67) |  25.6(3.5) |
+| M4.9   | 23.5(2.80) | 23.8(2.89) |
+|--------+------------+------------|
+
+** DONE simulation heter ASL @whale (1,-1,1)			 :simulation:
+   [[file:HeterPTlm-boot-asl-heter.R]] outfile-pt-0415-asl-heter
+   [[file:BQRboot3-asl-heter.R]] outfile-bqr-0415-asl-heter
+
+   MSE: (1-x1+x2)*e3 , ASL
+|--------+------------+-------------|
+| Model: |        BQR |          PT |
+|--------+------------+-------------|
+| M4.5   | 8.95(0.84) | 11.97(1.41) |
+| M4.9   | 40.0(4.07) |  44.8(7.44) |
+|--------+------------+-------------|
+
+   not even close.. lose again
+
+** DONE Kottas, Krnjajic, 2009 , SJS, mixture DP
+   no method comparison,
+   no regression parameter in simulation
+
+** DONE Tokdar-Kadane-BA-2011 [important] simultaneous linear quantile regression
+   /tmp/slqr
+   good review on , traditional quantile regression with check
+   function and linear programming, nonparameteric way, modeling error
+   distribution with polya tree and DP. 
+   simultaneous quantile regression 
+   
+   problem for a single tau-quantile regression: not coherent, as they
+   each represent posterior belief under a different model
+
+** DONE check Thompson 2010: splines
+
+** DONE Kozami-2010, gibbs sampling for asl
+   good paper about gibbs sampling for ASL, and 
+   reported good performance of rq in heter case, 
+   may consider do simulation against them, following their 
+   settings 
+
+   Tsionas update each element of beta separately, may produce highly
+   correlated draws and become less efficient than Kozami's
+   algorithm. 
+
+** TODO may consider vector sampling again , and check loglik when nskip=1
+   test multivariate normal sampling first 
+
+** TODO consider simulation comparison on simultaneous quantile regression
