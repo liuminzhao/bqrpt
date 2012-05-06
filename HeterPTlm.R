@@ -1,5 +1,5 @@
 ####################################################################
-# Time-stamp: <liuminzhao 04/11/2012 16:38:03>
+# Time-stamp: <liuminzhao 05/06/2012 16:14:19>
 #
 # 2012/03/29 wrap heterptlm.f,
 ####################################################################
@@ -62,7 +62,7 @@ HeterPTlm <- function(y, x, mcmc, prior, quan){
   v <- (y-x%*%beta)/(x%*%gamma)
   
   ## WORKING 
-  whicho <- whichn <- rep(0, n)
+  whicho <- whichn <- rep(0, nrec)
 
   ## DEBUG
   ratesave <- matrix(0, nburn/100, 2*p+2)
@@ -144,7 +144,7 @@ HeterPTlm <- function(y, x, mcmc, prior, quan){
             grid=grid,
             mcmc=mcmc,
             prior=prior,
-            n=n,
+            n=nrec,
             p=p,
             quan=quan,
             y=y,
