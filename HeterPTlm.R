@@ -1,5 +1,5 @@
 ####################################################################
-# Time-stamp: <liuminzhao 05/06/2012 16:14:19>
+# Time-stamp: <liuminzhao 06/10/2012 15:33:00>
 #
 # 2012/03/29 wrap heterptlm.f,
 ####################################################################
@@ -51,7 +51,7 @@ HeterPTlm <- function(y, x, mcmc, prior, quan){
 
   ## grid
   ngrid <- 200
-  grid <- seq(-5,5, length=ngrid)
+  ##  grid <- seq(-5,5, length=ngrid)
   f <- rep(0, ngrid)
   
   ## INITIAL
@@ -59,7 +59,13 @@ HeterPTlm <- function(y, x, mcmc, prior, quan){
   gamma <- c(1, rep(0, p-1))
   sigma2 <- 1
   alpha <- 1
-  v <- (y-x%*%beta)/(x%*%gamma)
+  v <- as.vector((y-x%*%beta)/(x%*%gamma))
+
+  ## new grid 
+  
+  left <- min(v) - 0.5*sd(v)
+  right <- max(v) + 0.5*sd(v)
+  grid <- seq(left, right, length=ngrid)
   
   ## WORKING 
   whicho <- whichn <- rep(0, nrec)

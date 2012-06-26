@@ -583,7 +583,7 @@ c+++++++ following observations
                         whicho(countero)=l
                      end if   
                   end do
-              end if  
+              end if   
               if(mdzero.ne.0)then 
                  logliko=logliko+
      &                log(2.d0*alpha+dble(2*countero))-
