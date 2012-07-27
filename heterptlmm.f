@@ -5,9 +5,10 @@ c===============================================
      &     nburn, nskip, nsave, ndisp,
      &     betasave, gammasave, sigmasave, alphasave, 
 c     &     whicho, whichn, betac, gammac, sigmac, vc, alphac, 
-     &     beta, gamma, alpha, Sigma, propv, arate)
-
-c$$$      Time-stamp: <2012/06/19>
+     &     beta, gamma, alpha, Sigma, propv, arate,
+     &     ngrid, grid, f,
+     &     nquan, qtile, quansave)
+c$$$      Time-stamp: <2012/07/26>
 c##################################################
       
       implicit none
@@ -54,7 +55,7 @@ C     CURRENT
 
 C     TEMP : workmr2c is is candidate for workmr2 (rnorm(q,q))
       integer parti(q)
-      real*8 tmp1, tmp2, tmp(q)
+      real*8 tmp1, tmp2, tmp(q), tmpnsub(nsub)
       real*8 workmr1(q,q), ortho(q,q), workmr2(q,q), workmr2c(q,q)
       real*8 orthoc(q,q)
       real*8 detlogl, detloglc
@@ -63,6 +64,17 @@ C     TEMP : workmr2c is is candidate for workmr2 (rnorm(q,q))
 
 C     cpu
       real*8 sec00, sec0, sec1, sec
+
+c     grid
+      integer ngrid
+      real*8 grid(ngrid)
+      real*8 f(ngrid, q)
+
+c     quantile
+      integer nquan
+      real*8 qtile(nquan)
+      real*8 quansave(nsave, nquan*q)
+      real*8 tmpquan(nquan)
 
 C     FUNCTION
       real*8 myrnorm, dnrm, myrunif, dgamma2
@@ -718,6 +730,35 @@ c            print*, 'begin save'
 
                alphasave(isave)=alpha
 
+c     marginal density
+               do j=1, q
+                  do k=1, nsub
+                     tmpnsub(k)=b(k, j)
+                  end do
+
+                  do i= 1, ngrid
+                     loglikec=0.d0
+                     call gridupptprior(grid(i), maxm, mdzero, nsub,
+     &                    alpha, mu(j), Sigma(j,j), tmpnsub,
+     &                    whicho, whichn, loglikec)
+                     f(i, j)=f(i,j)+exp(loglikec)
+                  end do
+               end do
+
+c     postquantile 
+               do j=1, q
+                  do k=1, nsub
+                     tmpnsub(k)= b(k, j)
+                  end do
+                  
+                  call postquantile(nsub, tmpnsub, Sigma(j,j), alpha,
+     &                 maxm, qtile, tmpquan, nquan)
+                  
+                  do i=1, nquan
+                     quansave(isave, (j-1)*nquan+i)=tmpquan(i)
+                  end do
+               end do
+
                skipcount=0
                if (dispcount .ge. ndisp) then
                   call cpu_time(sec1)
@@ -733,6 +774,12 @@ c            print*, 'begin save'
 
 c         print*, iscan
          
+      end do
+
+      do j=1, q
+         do i=1, ngrid
+            f(i, j) = f(i,j)/dble(nsave)
+         end do
       end do
 
       return
@@ -1136,3 +1183,253 @@ c+++++++ following subjects
 
       return
       end
+
+C     =========================================
+      subroutine gridupptprior(theta,maxm,mdzero,nsubject,alpha,mu,
+     &                         sigma,b,
+     &                         whicho,whichn,logprioro)
+c=======================================================================
+c     This subroutine evaluate the log-contional prior distribution,
+c     arising in a marginal univariate partially specified PT, 
+c     for a value in a grid 'theta'.
+c
+c     Alejandro Jara, 2007
+c======================================================================= 
+      implicit none
+
+c++++ Input
+      integer maxm,mdzero,nsubject
+      real*8 alpha,mu,sigma,b(nsubject),theta
+
+c++++ Working Externals
+      integer whicho(nsubject),whichn(nsubject)
+
+c++++ Working Internals
+      integer countero,countern
+      integer j,je2,k,k1,k2,l,nint,parti
+      integer ok
+      real*8 dnrm,invcdfnorm
+      real*8 prob
+      real*8 quan
+      real*8 tmp1,tmp2
+
+c++++ Output
+      real*8 logprioro
+      
+      logprioro=0.d0
+      
+      quan=mu
+      countero=0
+      if(theta.le.quan) then
+          parti=1
+          do l=1,nsubject
+             if(b(l).le.quan)then
+                countero=countero+1
+                whicho(countero)=l
+             end if   
+          end do
+        else
+          parti=2
+          do l=1,nsubject
+             if(b(l).gt.quan)then
+                countero=countero+1
+                whicho(countero)=l
+             end if   
+          end do
+      end if  
+
+      if(mdzero.ne.0)then 
+         logprioro=logprioro+
+     &    log(2.d0*alpha+dble(2*countero))-
+     &    log(2.d0*alpha+dble(nsubject))
+      end if 
+
+      if(countero.eq.0)go to 1
+
+      ok=1
+      j=2
+      do while(ok.eq.1.and.j.le.maxm)
+         nint=2**j
+         je2=j**2
+         prob=1.d0/dble(nint)
+        
+         k1=2*(parti-1)+1
+         k2=2*(parti-1)+2
+         quan=invcdfnorm(dble(k1)*prob,mu,sqrt(sigma),1,0)
+      
+         if(theta.le.quan)then
+           parti=k1
+           k=k1
+          else
+           parti=k2
+           k=k2
+         end if  
+         
+         countern=0
+
+         if(k.eq.1)then
+            do l=1,countero
+               if(b(whicho(l)).le.quan)then
+                  countern=countern+1
+                  whichn(countern)=whicho(l)
+               end if   
+            end do
+          else if(k.eq.nint)then
+            quan=invcdfnorm(dble(k-1)/dble(nint),mu,
+     &                      sqrt(sigma),1,0) 
+            do l=1,countero
+               if(b(whicho(l)).gt.quan)then
+                  countern=countern+1
+                  whichn(countern)=whicho(l)
+               end if   
+            end do
+          else
+            tmp1=invcdfnorm(dble(k-1)/dble(nint),mu,
+     &                      sqrt(sigma),1,0)
+            tmp2=invcdfnorm(dble(k  )/dble(nint),mu,
+     &                      sqrt(sigma),1,0)
+
+            if(tmp1.ge.tmp2)then
+              call rexit("Error in the limits")
+            end if  
+         
+            do l=1,countero
+               if(b(whicho(l)).gt.tmp1.and.
+     &            b(whicho(l)).le.tmp2)then
+                 countern=countern+1
+                 whichn(countern)=whicho(l)
+               end if
+            end do
+         end if
+        
+         logprioro=logprioro+
+     &       log(2.d0)+                
+     &       log(     alpha*dble(je2)+dble(  countern))-
+     &       log(2.d0*alpha*dble(je2)+dble(  countero))
+
+         if(countern.eq.0)then
+             ok=0
+           else  
+             countero=countern
+             do l=1,countern
+                whicho(l)=whichn(l)
+             end do
+             j=j+1
+         end if   
+      end do
+1     continue
+
+      logprioro=logprioro+dnrm(theta,mu,sqrt(sigma),1)
+      
+      return
+      end
+
+C=======================================================
+C     POST QUANTILE FOR EACH INTERATION IN MCMC
+C     Time-stamp: <liuminzhao 03/13/2012 00:33:09>
+C     2012/03/12 
+C=======================================================
+
+      subroutine postquantile(n, v, sigma2, alpha, maxm, quan, quansave,
+     &     nquan)
+      implicit none
+
+C     output and input
+      integer n, maxm, nquan, bign(nquan)
+      real*8 v(n), sigma2, alpha, quan(nquan), quansave(nquan)
+
+C     working space
+      real*8 p(2**maxm), interval(2**maxm-1), mu, tmp
+      integer ncount(2**maxm), i,j, count, nint
+      integer nmatrix(maxm, 2**maxm)
+      
+C     FUNCTION 
+      real*8 invcdfnorm
+
+C     INITIAL
+      mu=0
+      nint=2**maxm
+      do i=1, nint
+         p(i)=0
+         ncount(i)=0
+      end do 
+
+      do i=1, maxm
+         do j=1, nint
+            nmatrix(i,j)=0
+         end do
+      end do
+
+C     begin
+      
+C     first get interval
+
+      do i=1, nint-1
+         interval(i) = invcdfnorm(dble(i)/dble(nint), mu, sqrt(sigma2),
+     &        1,0)
+      end do
+
+C     get ncount 
+      
+      do i=1, nint
+         count=0
+         if ( i.eq.1) then
+            do j=1, n
+               if (v(j) .lt. interval(i)) then
+                  count = count + 1
+               end if 
+            end do
+         else if (i.eq.nint) then 
+            do j=1,n
+               if (v(j) .gt. interval(i-1)) then
+                  count = count + 1
+               end if
+            end do
+         else 
+            do j=1,n
+               if (v(j).gt.interval(i-1).and.v(j).lt.interval(i)) then
+                  count=count+1
+               end if
+            end do
+         end if
+         ncount(i) = count
+      end do
+
+C     get nmatrix 
+      do i=1, nint
+         nmatrix(maxm, i)=ncount(i)
+      end do
+
+      do i=(maxm-1), 1,-1
+         do j=1, 2**i
+            nmatrix(i,j) = nmatrix(i+1, 2*j-1)+nmatrix(i+1, 2*j)
+         end do
+      end do
+
+C     get p
+
+      do j=1, nint
+         tmp=1
+         do i=maxm, 2, -1
+            tmp=tmp*(alpha*dble(i**2)+nmatrix(i, floor(dble(j-1)/
+     &           dble(2**(maxm-i)))+1))/(2.d0*alpha*dble(i**2) + 
+     &           nmatrix(i-1,floor(dble(j-1)/dble(2**(maxm-i+1)))+1))
+         end do
+         tmp=tmp*dble(0.5)
+         p(j)=tmp
+      end do
+
+C     get N and quansave
+      do i=1, nquan
+         tmp=0
+         do j=1, nint
+            tmp=tmp+p(j)
+            if (tmp.gt. quan(i)) exit 
+         end do 
+         bign(i) = j
+         quansave(i) = invcdfnorm(dble(quan(i)-tmp+dble(j)*p(j))/
+     &        dble(2**maxm)/p(j), mu, sqrt(sigma2), 1,0)
+      end do
+
+      return
+      end 
