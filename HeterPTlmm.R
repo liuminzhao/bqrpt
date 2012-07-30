@@ -120,12 +120,20 @@ HeterPTlmm <- function(y, X, nsub, mcmc, prior, quan){
   quansave <- matrix(foo$quansave, nsave, q*nquan)
   dens <- matrix(foo$f, ngrid, q)
 
+  betatau <- matrix(0, nquan*q, p)
+  for (j in 1:q){
+    for (i in 1:nquan){
+      tmp <- betasave+gammasave*as.numeric(quansave[,(j-1)*nquan+i])
+      betatau[(j-1)*nquan+i,] <- apply(tmp, 2, mean)
+    }
+  }
   
   coef <- list(beta=apply(betasave, 2, mean),
                gamma=apply(gammasave,2,mean),
                alpha=mean(alphasave),
                sigma=apply(sigmasave, 2, mean),
-               quan=apply(quansave, 2, mean)
+               quan=apply(quansave, 2, mean),
+               betatau=betatau
                )
 
   z <- list(coef=coef,
