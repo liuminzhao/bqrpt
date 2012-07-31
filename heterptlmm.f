@@ -47,7 +47,7 @@ C     WORKING
 c     TUNING
       integer att1(p), att2(p), att3(3), att4, att5
       integer acc1(p), acc2(p), acc3(3), acc4, acc5
-      real*8 tune1(p), tune2(p), tune3(p), tune4, tune5
+      real*8 tune1(p), tune2(p), tune3(3), tune4, tune5
       real*8 arate
 
 C     CURRENT
@@ -148,6 +148,9 @@ c=========================================
       skipcount=0
       dispcount=0
       nscan=nburn+(nskip+1)*nsave
+
+      call cpu_time(sec0)
+      sec00 = 0.d0 
 
 C     FIRST : f(e1, ..., en)
       loglikeo=0.d0
