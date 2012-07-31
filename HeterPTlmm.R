@@ -16,7 +16,7 @@ HeterPTlmm <- function(y, X, nsub, mcmc, prior, quan){
   dyn.load('heterptlmm.so')
   
   # DATA
-  nrec <- length(y)
+  nrec <- prod(dim(y))
   q <- nrec/nsub
   p <- dim(X)[2]
 
@@ -45,12 +45,11 @@ HeterPTlmm <- function(y, X, nsub, mcmc, prior, quan){
   nquan <- length(quan)
   
   # SAVE
-  betasave<- matrix(0, nsave, p)
-  gammasave <- matrix(0, nsave, p)
+  betasave<- array(0, c(nsave, p,q))
+  gammasave <- array(0, c(nsave, p, q))
   sigmasave <- matrix(0, nsave, 3) # sigma1, sigma2, rho
   alphasave <- rep(0, nsave)
   quansave <- matrix(0, nsave, nquan*q)
-    #   quansave not used yet
   
   # GRID
   ngrid <- 200
@@ -58,12 +57,13 @@ HeterPTlmm <- function(y, X, nsub, mcmc, prior, quan){
   f <- matrix(0, ngrid, q)
   
   # INITIAL
-  beta <- as.vector(solve(t(X)%*%X)%*%t(X)%*%y)
-  gamma <- c(1, rep(0, p-1))
+  beta <- solve(t(X)%*%X)%*%t(X)%*%y
+  gamma <- matrix(0, p, q)
+  gamma[1,] <- 1
   sigmavec <- c(1, 1, 0)
   Sigma <- diag(2)
   alpha <- 1
-  v <- as.vector((y-X%*%beta)/(X%*%gamma))
+  b <- (y-x%*%beta)/(x%*%gamma)
   propv <- solve(t(X)%*%X)
   # WORKING
   whicho <- whichn <- rep(0, nsub)
@@ -75,34 +75,34 @@ HeterPTlmm <- function(y, X, nsub, mcmc, prior, quan){
   # MCMC USING FORTRAN
 
   foo <- .Fortran("heterptlmm",
-              maxm=as.integer(maxm),
-              mdzero=as.integer(mdzero),
-              nrec=as.integer(nrec),
-              nsub=as.integer(nsub),
-              p=as.integer(p),
-              q=as.integer(q),
-              x=as.double(X),
-              y=as.double(y),
-              betapm=as.double(betapm),
-              betapv=as.double(betapv),
-              tau=as.double(tau),
-              a0b0=as.double(a0b0),
-              gammapm=as.double(gammapm),
-              gammapv=as.double(gammapv),
-              nburn=as.integer(nburn),
-              nskip=as.integer(nskip),
-              nsave=as.integer(nsave),
-              ndisp=as.integer(ndisp),
-              betasave=as.double(betasave),
-              gammasave=as.double(gammasave),
-              sigmasave=as.double(sigmasave),
-              alphasave=as.double(alphasave),
-              beta=as.double(beta),
-              gamma=as.double(gamma),
-              alpha=as.double(alpha),
-              Sigma=as.double(Sigma),
-              propv=as.double(propv),
-              arate=as.double(arate),
+                  maxm=as.integer(maxm),
+                  mdzero=as.integer(mdzero),
+                  nrec=as.integer(nrec),
+                  nsub=as.integer(nsub),
+                  p=as.integer(p),
+                  q=as.integer(q),
+                  x=as.double(X),
+                  y=as.double(y),
+                  betapm=as.double(betapm),
+                  betapv=as.double(betapv),
+                  tau=as.double(tau),
+                  a0b0=as.double(a0b0),
+                  gammapm=as.double(gammapm),
+                  gammapv=as.double(gammapv),
+                  nburn=as.integer(nburn),
+                  nskip=as.integer(nskip),
+                  nsave=as.integer(nsave),
+                  ndisp=as.integer(ndisp),
+                  betasave=as.double(betasave),
+                  gammasave=as.double(gammasave),
+                  sigmasave=as.double(sigmasave),
+                  alphasave=as.double(alphasave),
+                  beta=as.double(beta),
+                  gamma=as.double(gamma),
+                  alpha=as.double(alpha),
+                  Sigma=as.double(Sigma),
+                  propv=as.double(propv),
+                  arate=as.double(arate),
                   ngrid=as.integer(ngrid),
                   grid=as.double(grid),
                   f=as.double(f),
@@ -113,8 +113,8 @@ HeterPTlmm <- function(y, X, nsub, mcmc, prior, quan){
 
   ####################################
 
-  betasave <- matrix(foo$betasave, nsave, p)
-  gammasave <- matrix(foo$gammasave, nsave, p)
+  betasave <- array(foo$betasave, dim=c(nsave, p, q))
+  gammasave <- array(foo$gammasave, c(nsave, p, q))
   alphasave <- foo$alphasave
   sigmasave <- matrix(foo$sigmasave, nsave, 3)
   quansave <- matrix(foo$quansave, nsave, q*nquan)
@@ -123,13 +123,13 @@ HeterPTlmm <- function(y, X, nsub, mcmc, prior, quan){
   betatau <- matrix(0, nquan*q, p)
   for (j in 1:q){
     for (i in 1:nquan){
-      tmp <- betasave+gammasave*as.numeric(quansave[,(j-1)*nquan+i])
+      tmp <- betasave[,,j]+gammasave[,,j]*as.numeric(quansave[,(j-1)*nquan+i])
       betatau[(j-1)*nquan+i,] <- apply(tmp, 2, mean)
     }
   }
   
-  coef <- list(beta=apply(betasave, 2, mean),
-               gamma=apply(gammasave,2,mean),
+  coef <- list(beta=apply(betasave, c(2,3), mean),
+               gamma=apply(gammasave,c(2,3),mean),
                alpha=mean(alphasave),
                sigma=apply(sigmasave, 2, mean),
                quan=apply(quansave, 2, mean),

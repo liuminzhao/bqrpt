@@ -18,7 +18,7 @@ C     PT
 
 C     DATA
       integer nrec, nsub, p, q
-      real*8 x(nrec, p), y(nrec), propv(p,p)
+      real*8 x(nrec, p), y(nsub, q), propv(p,p)
 
 C     PRIOR
       real*8 betapm(p), betapv(p,p), gammapm(p), gammapv(p,p)
@@ -28,30 +28,30 @@ C     MCMC
       integer nburn, nskip, nsave, ndisp
 
 C     SAVE
-      real*8 betasave(nsave, p), gammasave(nsave, p)
+      real*8 betasave(nsave, p, q), gammasave(nsave, p, q)
       real*8 sigmasave(nsave, 3), alphasave(nsave)
 
 C     WORKING
       integer whicho(nsub), whichn(nsub)
-      real*8 betac(p), gammac(p), vc(nrec)
+      real*8 betac(p,q), gammac(p,q), vc(nrec)
       real*8 alphac, sigmavecc(3)
       real*8 b(nsub, q), bz(nsub, q), bc(nsub,q)
       real*8 Sigma(2,2), Sigmac(2,2)
 
-      integer i, iscan, isave, j, nscan, skipcount, k, dispcount
+      integer i, iscan, isave, j, nscan, skipcount, k, dispcount, l
       real*8 loglikec, loglikeo, logpriorc, logprioro
       real*8 logcgkn, logcgko , loglikaddo, loglikaddc
 
       real*8 ratio, mu(q)
 
 c     TUNING
-      integer att1(p), att2(p), att3(3), att4, att5
-      integer acc1(p), acc2(p), acc3(3), acc4, acc5
-      real*8 tune1(p), tune2(p), tune3(p), tune4, tune5
+      integer att1(q), att2(q), att3(3), att4, att5
+      integer acc1(q), acc2(q), acc3(3), acc4, acc5
+      real*8 tune1(q), tune2(q), tune3(3), tune4, tune5
       real*8 arate
 
 C     CURRENT
-      real*8 beta(p), gamma(p), alpha, sigmavec(3), v(nrec)
+      real*8 beta(p, q), gamma(p, q), alpha, sigmavec(3), v(nrec)
 
 C     TEMP : workmr2c is is candidate for workmr2 (rnorm(q,q))
       integer parti(q)
@@ -113,7 +113,7 @@ C     INITIAL
          end do
       end do
 
-      do i=1, p
+      do i=1, q
          tune1(i)=0.1
          tune2(i)=0.1
          acc1(i)=0
@@ -141,6 +141,9 @@ C     INITIAL
       sigmavec(2)=sqrt(Sigma(2,2))
       sigmavec(3)=Sigma(1,2)/sigmavec(1)/sigmavec(2)
 
+      call cpu_time(sec0)
+      sec00 = 0.d0
+
 C=========================================
 c$$$  START MCMC
 c=========================================
@@ -153,22 +156,24 @@ C     FIRST : f(e1, ..., en)
       loglikeo=0.d0
       
 C     residual
-      do i=1, nrec
-         tmp1=0.d0
-         tmp2=0.d0
-         do j = 1,p
-            tmp1= tmp1+x(i,j)*beta(j)
-            tmp2= tmp2+x(i,j)*gamma(j)
+      do i=1, nsub
+         do k=1, q
+            tmp1=0.d0
+            tmp2=0.d0
+            do j = 1,p
+               tmp1= tmp1+x(i,j)*beta(j, k)
+               tmp2= tmp2+x(i,j)*gamma(j, k)
+            end do
+            b(i,k) = (y(i,k)-tmp1)/tmp2
          end do
-         v(i) = (y(i)-tmp1)/tmp2
       end do
 
 C     residual matrix
-      do i=1, nsub
-         do j=1, q
-            b(i, j) = v(q*(i-1)+j)
-         end do
-      end do
+c$$$      do i=1, nsub
+c$$$         do j=1, q
+c$$$            b(i, j) = v(q*(i-1)+j)
+c$$$         end do
+c$$$      end do
 
 C     get O
 C      call rhaar2(workmr1, workmr2, q, ortho)
@@ -176,7 +181,6 @@ C      call rhaar2(workmr1, workmr2, q, ortho)
       ortho(1,2)=0.d0
       ortho(2,1)=0.d0
       ortho(2,2)=1.d0
-
 
       loglikeo=0.d0
 
@@ -221,38 +225,51 @@ c     beta
 C=========================================
 
 c         print*, 'begin beta'
-
-         do i=1, p
-            att1(i)=att1(i) + 1
-            do j=1, p
-               betac(j)=beta(j)
+         do k=1, q
+            att1(k)=att1(k) + 1
+            do i=1, p
+               do j=1, q
+                  betac(i,j)=beta(i,j)
+               end do
             end do
-            betac(i) = myrnorm(beta(i), tune1(i)*sqrt(propv(i,i)))
+            
+            do i=1, p
+               betac(i,k) = myrnorm(beta(i,k),tune1(k)*sqrt(propv(i,i)))
+            end do
 
 c            print*, betac
 
-            do k = 1, nrec
-               tmp1=0.d0
-               tmp2=0.d0
-               do j = 1,p
-                  tmp1= tmp1+x(k,j)*betac(j)
-                  tmp2= tmp2+x(k,j)*gamma(j)
+            do i = 1, nsub
+               do j=1,q
+                  tmp1=0.d0
+                  tmp2=0.d0
+                  do l = 1,p
+                     tmp1= tmp1+x(i,l)*betac(l, j)
+                     tmp2= tmp2+x(i,l)*gamma(l, j)
+                  end do
+                  bc(i, j) = (y(i,j)-tmp1)/tmp2
                end do
-               vc(k) = (y(k)-tmp1)/tmp2
             end do
 
 c     log prior
-            logpriorc=dnrm(betac(i), betapm(i), betapv(i,i),1)
-            logprioro=dnrm(beta(i), betapm(i), betapv(i,i),1)
+            logprioro=0.d0
+            logpriorc=0.d0
+            
+            do i=1, p
+               logpriorc= logpriorc + dnrm(betac(i,k), betapm(i), 
+     &              betapv(i,i),1)
+               logprioro= logprioro + dnrm(beta(i,k), betapm(i), 
+     &              betapv(i,i),1)
+            end do
 
 c     log likelihood
             loglikec=0.d0
 
-            do k=1, nsub
-               do j=1, q
-                  bc(k, j) = vc(q*(k-1)+j)
-               end do
-            end do
+c$$$            do k=1, nsub
+c$$$               do j=1, q
+c$$$                  bc(k, j) = vc(q*(k-1)+j)
+c$$$               end do
+c$$$            end do
 
             call loglik_mpt(maxm, q, nsub, parti,
      &           whicho, whichn, bc, bz, alpha, detlogl,
@@ -272,16 +289,18 @@ c$$$            print*, ratio
 
             if (log(dble(myrunif(0.d0, 1.d0))).lt. ratio) then 
                loglikeo=loglikec
-               beta(i)=betac(i)
-               do k=1, nrec
-                  v(k) = vc(k)
+               do i=1,p
+                  beta(i, k)=betac(i,k)
                end do
-               do k=1, nsub
+c$$$               do k=1, nrec
+c$$$                  v(k) = vc(k)
+c$$$               end do
+               do i=1, nsub
                   do j=1, q
-                     b(k, j) = bc(k,j)
+                     b(i, j) = bc(i,j)
                   end do
                end do
-               acc1(i)=acc1(i)+1
+               acc1(k)=acc1(k)+1
             end if
             
          end do
@@ -292,49 +311,64 @@ C========================================
 
 c         print*, 'begin gamma'
 
-         do i=2, p
-            att2(i)=att2(i)+1
-            do j=1,p
-               gammac(j) = gamma(j)
+         do k=1, p
+            att2(k)=att2(k)+1
+            do i=1,p
+               do j=1,q
+                  gammac(i,j) = gamma(i,j)
+               end do
             end do
-            gammac(i) = myrnorm(gamma(i), tune2(i)*sqrt(propv(i,i)))
-            gammac(1)=1.d0
+
+            do i=2,p
+               gammac(i,k)=myrnorm(gamma(i,k),tune2(k)*sqrt(propv(i,i)))
+            end do
+c            gammac(1)=1.d0
             
 C     ==================================
 C     take gammac only when min(x'gammac) >0 
 
             tmp1=dble(100)
-            do j=1, nrec
-               tmp2=0.d0
-               do k=1,p
-                  tmp2=tmp2+x(j,k)*gammac(k)
+            do i=1, nsub
+               do j=1, q
+                  tmp2=0.d0
+                  do l=1,p
+                     tmp2=tmp2+x(i,l)*gammac(l,j)
+                  end do
+                  if (tmp2 .lt. tmp1) then 
+                     tmp1=tmp2
+                  end if
                end do
-               if (tmp2 .lt. tmp1) then 
-                  tmp1=tmp2
-               end if
             end do
 
-
             if (tmp1 .gt. 0.d0) then 
-               do k = 1, nrec
-                  tmp1=0.d0
-                  tmp2=0.d0
-                  do j = 1,p
-                     tmp1= tmp1+x(k,j)*beta(j)
-                     tmp2= tmp2+x(k,j)*gammac(j)
+               do i = 1, nsub
+                  do j=1,q
+                     tmp1=0.d0
+                     tmp2=0.d0
+                     do l = 1,p
+                        tmp1= tmp1+x(i,l)*beta(l,j)
+                        tmp2= tmp2+x(i,l)*gammac(l,j)
+                     end do
+                     bc(i,j) = (y(i,j)-tmp1)/tmp2
                   end do
-                  vc(k) = (y(k)-tmp1)/tmp2
                end do
 
-               do k=1, nsub
-                  do j=1, q
-                     bc(k, j) = vc(q*(k-1)+j)
-                  end do
-               end do
+c$$$               do k=1, nsub
+c$$$                  do j=1, q
+c$$$                     bc(k, j) = vc(q*(k-1)+j)
+c$$$                  end do
+c$$$               end do
                
 C     log prior
-               logpriorc=dnrm(gammac(i), gammapm(i), gammapv(i,i), 1)
-               logprioro=dnrm(gamma(i), gammapm(i), gammapv(i,i), 1)
+               logprioro=0.d0
+               logpriorc=0.d0
+               
+               do i=1, p
+                  logpriorc=logpriorc+ dnrm(gammac(i,k), gammapm(i), 
+     &                 gammapv(i,i), 1)
+                  logprioro=logprioro+ dnrm(gamma(i,k), gammapm(i), 
+     &                 gammapv(i,i), 1)
+               end do
 
 C     log likelihood
                
@@ -349,15 +383,17 @@ C     additional loglike
                loglikaddc=0.d0
                loglikaddo=0.d0
                
-               do k=1, nrec
-                  tmp1=0.d0
-                  tmp2=0.d0
-                  do j=1,p
-                     tmp1=tmp1+x(k,j)*gammac(j)
-                     tmp2=tmp2+x(k,j)*gamma(j)
+               do i=1, nsub
+                  do j=1, q
+                     tmp1=0.d0
+                     tmp2=0.d0
+                     do l=1,p
+                        tmp1=tmp1+x(i,l)*gammac(l,j)
+                        tmp2=tmp2+x(i,l)*gamma(l,j)
+                     end do
+                     loglikaddc=loglikaddc+log(tmp1)
+                     loglikaddo=loglikaddo+log(tmp2)
                   end do
-                  loglikaddc=loglikaddc+log(tmp1)
-                  loglikaddo=loglikaddo+log(tmp2)
                end do
                
 C     acceptance step
@@ -366,17 +402,19 @@ C     acceptance step
 
                if (log(dble(myrunif(0.d0, 1.d0))).lt. ratio) then 
                   loglikeo=loglikec
-                  gamma(i)=gammac(i)
-                  gamma(1)=1
-                  do k=1, nrec
-                     v(k) = vc(k)
+                  do i=1,p
+                     gamma(i,k)=gammac(i,k)
                   end do
-                  do k=1, nsub
+c                  gamma(1)=1
+c$$$                  do k=1, nrec
+c$$$                     v(k) = vc(k)
+c$$$                  end do
+                  do i=1, nsub
                      do j=1, q
-                        b(k, j) = bc(k,j)
+                        b(i, j) = bc(i,j)
                      end do
                   end do
-                  acc2(i)=acc2(i)+1
+                  acc2(k)=acc2(k)+1
                end if
             end if               
          end do
@@ -538,7 +576,6 @@ C     acceptance
             acc4=acc4+1
          end if
 
-
 c=========================================
 c     Ortho 
 c========================================
@@ -582,7 +619,7 @@ c ======================================
             
 c            print*, 'tune1'
 
-            do i=1, p
+            do i=1, q
                if (dble(acc1(i))/dble(att1(i)) .gt. arate) then 
                   tune1(i)=tune1(i) + 
      &                 min(0.1d0,dble(10)/sqrt(dble(iscan)))
@@ -719,9 +756,12 @@ c            print*, 'begin save'
                isave=isave+1
                dispcount=dispcount+1
 
+
                do j=1,p
-                  betasave(isave,j)=beta(j)
-                  gammasave(isave, j)=gamma(j)
+                  do k=1,q
+                     betasave(isave,j,k)=beta(j,k)
+                     gammasave(isave, j,k)=gamma(j,k)
+                  end do
                end do
 
                do j=1,3
@@ -767,12 +807,14 @@ c     postquantile
                   sec0 = sec1
                   print*,  isave, " out of " , nsave,
      &                 " for time ", floor(sec)
+                  print*, beta
+                  print*, gamma
+
+
                   dispcount=0
                end if
             end if
          end if
-
-c         print*, iscan
          
       end do
 
@@ -781,6 +823,9 @@ c         print*, iscan
             f(i, j) = f(i,j)/dble(nsave)
          end do
       end do
+      
+      print*, 'before return'
+      print*, betasave(1000,3,2)
 
       return
       end
