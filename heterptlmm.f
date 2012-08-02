@@ -28,7 +28,7 @@ C     MCMC
       integer nburn, nskip, nsave, ndisp
 
 C     SAVE
-      real*8 betasave(nsave, p, q), gammasave(nsave, p, q)
+      real*8 betasave(p, q, nsave), gammasave(p, q, nsave)
       real*8 sigmasave(nsave, 3), alphasave(nsave)
 
 C     WORKING
@@ -311,7 +311,7 @@ C========================================
 
 c         print*, 'begin gamma'
 
-         do k=1, p
+         do k=1, q
             att2(k)=att2(k)+1
             do i=1,p
                do j=1,q
@@ -759,8 +759,8 @@ c            print*, 'begin save'
 
                do j=1,p
                   do k=1,q
-                     betasave(isave,j,k)=beta(j,k)
-                     gammasave(isave, j,k)=gamma(j,k)
+                     betasave(j,k, isave)=beta(j,k)
+                     gammasave( j,k, isave)=gamma(j,k)
                   end do
                end do
 
@@ -807,8 +807,8 @@ c     postquantile
                   sec0 = sec1
                   print*,  isave, " out of " , nsave,
      &                 " for time ", floor(sec)
-                  print*, beta
-                  print*, gamma
+c                 print*, beta
+c                  print*, gamma
 
 
                   dispcount=0
@@ -824,8 +824,8 @@ c     postquantile
          end do
       end do
       
-      print*, 'before return'
-      print*, betasave(1000,3,2)
+c      print*, 'before return'
+c      print*, betasave(1000,3,2)
 
       return
       end
