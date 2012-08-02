@@ -63,7 +63,7 @@ HeterPTlmm <- function(y, X, nsub, mcmc, prior, quan){
   sigmavec <- c(1, 1, 0)
   Sigma <- diag(2)
   alpha <- 1
-  b <- (y-x%*%beta)/(x%*%gamma)
+  b <- (y-X%*%beta)/(X%*%gamma)
   propv <- solve(t(X)%*%X)
   # WORKING
   whicho <- whichn <- rep(0, nsub)

@@ -18,7 +18,7 @@ C     PT
 
 C     DATA
       integer nrec, nsub, p, q
-      real*8 x(nrec, p), y(nsub, q), propv(p,p)
+      real*8 x(nsub, p), y(nsub, q), propv(p,p)
 
 C     PRIOR
       real*8 betapm(p), betapv(p,p), gammapm(p), gammapv(p,p)
