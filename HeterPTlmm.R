@@ -16,7 +16,7 @@ HeterPTlmm <- function(y, X, nsub, mcmc, prior, quan){
   dyn.load('heterptlmm.so')
   
   # DATA
-  nrec <- length(y)
+  nrec <- prod(dim(y))
   q <- nrec/nsub
   p <- dim(X)[2]
 
@@ -45,12 +45,11 @@ HeterPTlmm <- function(y, X, nsub, mcmc, prior, quan){
   nquan <- length(quan)
   
   # SAVE
-  betasave<- matrix(0, nsave, p)
-  gammasave <- matrix(0, nsave, p)
+  betasave<- array(0, c(p,q, nsave))
+  gammasave <- array(0, c( p, q, nsave))
   sigmasave <- matrix(0, nsave, 3) # sigma1, sigma2, rho
   alphasave <- rep(0, nsave)
   quansave <- matrix(0, nsave, nquan*q)
-    #   quansave not used yet
   
   # GRID
   ngrid <- 200
@@ -58,12 +57,13 @@ HeterPTlmm <- function(y, X, nsub, mcmc, prior, quan){
   f <- matrix(0, ngrid, q)
   
   # INITIAL
-  beta <- as.vector(solve(t(X)%*%X)%*%t(X)%*%y)
-  gamma <- c(1, rep(0, p-1))
+  beta <- solve(t(X)%*%X)%*%t(X)%*%y
+  gamma <- matrix(0, p, q)
+  gamma[1,] <- 1
   sigmavec <- c(1, 1, 0)
   Sigma <- diag(2)
   alpha <- 1
-  v <- as.vector((y-X%*%beta)/(X%*%gamma))
+  b <- (y-X%*%beta)/(X%*%gamma)
   propv <- solve(t(X)%*%X)
   # WORKING
   whicho <- whichn <- rep(0, nsub)
@@ -113,8 +113,8 @@ HeterPTlmm <- function(y, X, nsub, mcmc, prior, quan){
 
   ####################################
 
-  betasave <- matrix(foo$betasave, nsave, p)
-  gammasave <- matrix(foo$gammasave, nsave, p)
+  betasave <- array(foo$betasave, dim=c(p, q, nsave))
+  gammasave <- array(foo$gammasave, c(p, q, nsave))
   alphasave <- foo$alphasave
   sigmasave <- matrix(foo$sigmasave, nsave, 3)
   quansave <- matrix(foo$quansave, nsave, q*nquan)
@@ -123,13 +123,13 @@ HeterPTlmm <- function(y, X, nsub, mcmc, prior, quan){
   betatau <- matrix(0, nquan*q, p)
   for (j in 1:q){
     for (i in 1:nquan){
-      tmp <- betasave+gammasave*as.numeric(quansave[,(j-1)*nquan+i])
-      betatau[(j-1)*nquan+i,] <- apply(tmp, 2, mean)
+      tmp <- betasave[,j,]+gammasave[,j,]*as.numeric(quansave[,(j-1)*nquan+i])
+      betatau[(j-1)*nquan+i,] <- apply(tmp, 1, mean)
     }
   }
   
-  coef <- list(beta=apply(betasave, 2, mean),
-               gamma=apply(gammasave,2,mean),
+  coef <- list(beta=apply(betasave, c(1,2), mean),
+               gamma=apply(gammasave,c(1,2),mean),
                alpha=mean(alphasave),
                sigma=apply(sigmasave, 2, mean),
                quan=apply(quansave, 2, mean),
@@ -144,7 +144,7 @@ HeterPTlmm <- function(y, X, nsub, mcmc, prior, quan){
             quansave=quansave,
             p=p,
             quan=quan,
-            n=nrec,
+            n=nsub,
             q=q,
             x=X,
             y=y,
@@ -162,20 +162,29 @@ HeterPTlmm <- function(y, X, nsub, mcmc, prior, quan){
 
 ###############################################
 
+summary.HeterPTlmm <- function(obj){
+  list(coef=obj$coef, n=obj$n, p=obj$p, q=obj$q, quan=obj$quan)
+}
+
+#################################################
 plot.HeterPTlmm <- function(obj, ask=FALSE){
   par(mfrow=c(obj$p, 2),ask=ask)
-  for (i in 1:obj$p){
-    title1 <- paste("Trace of beta" , i-1, sep=" ")
-    title2 <- paste("Density of beta", i-1, sep=" ")
-    plot(obj$betasave[,i], type='l', main=title1, xlab="MCMC scan", ylab=" ")
-    plot(density(obj$betasave[,i]), lwd=1.2, main=title2, xlab="values", ylab="density", col='red')
+  for (j in 1:obj$q){
+    for (i in 1:obj$p){
+      title1 <- paste("Trace of beta" , i-1, sep=" ")
+      title2 <- paste("Density of beta", i-1, sep=" ")
+      plot(obj$betasave[i,j,], type='l', main=title1, xlab="MCMC scan", ylab=" ")
+      plot(density(obj$betasave[i,j,]), lwd=1.2, main=title2, xlab="values", ylab="density", col='red')
+    }
   }
 
-  for (i in 2:obj$p){
-    title1 <- paste("Trace of gamma" , i-1, sep=" ")
-    title2 <- paste("Density of gamma", i-1, sep=" ")
-    plot(obj$gammasave[,i], type='l', main=title1, xlab="MCMC scan", ylab=" ")
-    plot(density(obj$gammasave[,i]), lwd=1.2, main=title2, xlab="values", ylab="density", col='red')
+  for (j in 1:obj$q){
+    for (i in 2:obj$p){
+      title1 <- paste("Trace of gamma" , i-1, sep=" ")
+      title2 <- paste("Density of gamma", i-1, sep=" ")
+      plot(obj$gammasave[i,j,], type='l', main=title1, xlab="MCMC scan", ylab=" ")
+      plot(density(obj$gammasave[i,j,]), lwd=1.2, main=title2, xlab="values", ylab="density", col='red')
+    }
   }
 
   for (i in 1:3){
@@ -195,3 +204,14 @@ plot.HeterPTlmm <- function(obj, ask=FALSE){
     plot(obj$grid, obj$dens[,i], ylab="density", main=title1, type='l', lwd=2, xlab="values")
   }
 }
+
+######## boot summary ##############
+bootsummary.HeterPTlmm <- function(obj, truebetatau){
+  mse <- rep(0, 4)
+  for (i in 1:4){
+    mse[i] <- mean((obj$coef$betatau[i,-1]-truebetatau[i, -1])^2)
+  }
+
+  return(list(mse=mse))
+}
+

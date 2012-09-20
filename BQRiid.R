@@ -205,7 +205,7 @@ BayesQReg<-function(y,X,tau=0.5,M=10,
       }
     }
 
-    if(i%%1000==0){print(i)}
+#    if(i%%1000==0){print(i)}
   }
 
 list(beta=keepbeta,gamma=keepgamma,
