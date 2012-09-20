@@ -1,6 +1,8 @@
 ####################################################################
-# Time-stamp: <liuminzhao 09/08/2012 12:56:37>
+# Time-stamp: <liuminzhao 09/13/2012 14:32:10>
 #
+# 2012/09/13 add sspi for spike and slab prior hyperprior pi~Bern(sspi)
+# sspi ~ Beta(1,1) in heterptlm-ss.f
 # 2012/09/08 add Spike-slab prior on HeterPTlmMean.R
 ####################################################################
 ##' .. content for \description{} (no empty lines) ..

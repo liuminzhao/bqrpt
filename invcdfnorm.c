@@ -1,6 +1,8 @@
 #include <R.h>
 #include <Rmath.h>
-       
+
+/* 2012/09/13 add rbeta */
+
 double F77_SUB(invcdfnorm)(double *p, double *mu, double *sigma, int *lower_tail, int *log_p)
 {
   return qnorm(*p, *mu, *sigma, *lower_tail, *log_p);
@@ -23,6 +25,8 @@ void F77_SUB(rndstart)(void) { GetRNGstate(); }
 void F77_SUB(rndend)(void) { PutRNGstate(); }     
 double F77_SUB(myrnorm)(double *mu, double *sigma) { return rnorm(*mu, *sigma) ;}
 double F77_SUB(myrunif)(double *a, double *b) { return runif(*a, *b) ;}
+
+double F77_SUB(myrbeta)(double *a, double *b) { return rbeta(*a, *b) ; }
 
 int F77_SUB(ihmssf)(int *i, int *j, int *n){
   int ans;

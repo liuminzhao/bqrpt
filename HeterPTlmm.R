@@ -204,3 +204,14 @@ plot.HeterPTlmm <- function(obj, ask=FALSE){
     plot(obj$grid, obj$dens[,i], ylab="density", main=title1, type='l', lwd=2, xlab="values")
   }
 }
+
+######## boot summary ##############
+bootsummary.HeterPTlmm <- function(obj, truebetatau){
+  mse <- rep(0, 4)
+  for (i in 1:4){
+    mse[i] <- mean((obj$coef$betatau[i,-1]-truebetatau[i, -1])^2)
+  }
+
+  return(list(mse=mse))
+}
+

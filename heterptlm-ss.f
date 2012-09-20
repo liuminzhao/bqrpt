@@ -8,6 +8,9 @@ c==========================================================
 c===========================================================
 c$$$
 C$$$      Time-stamp: <liuminzhao 03/26/2012 13:37:32>
+c
+c         2012/09/13 add sspi as spike-slab hyperprior ~ beta(1,1)
+c         pi ~ Bern(sspi)
 c$$$      2012/09/08 modify spike-slab prior 
 c$$$      2012/03/26 set back to 0 for acc* when tuning 
 C         add ratesave(100, 2p-1), tunesave(nburn, 2p-1)
@@ -66,13 +69,17 @@ C     cpu
       real*8 sec00, sec0, sec1, sec
 
 C     FUNCTION
-      real*8 myrnorm,myrunif, dnrm, dgamma2
+      real*8 myrnorm,myrunif, dnrm, dgamma2, myrbeta
 
 C     DEBUG
       real*8 ratesave(200, 2*p+2)
       real*8 tunesave(mcmc(1), 2*p+2)
       real*8 hetersave(mcmc(1), p)
       real*8 arate
+
+c     Spike and slab
+      real*8 sspi
+c=======================================
 C     initial 
       nburn=mcmc(1)
       nskip=mcmc(2)
@@ -104,6 +111,8 @@ C      mdzero=0
 
       mu=0.d0
       ratecount=1
+
+      sspi=0.5
 
 C----------------------------------------------
 C     start mcmc 
@@ -159,10 +168,10 @@ C     BETA
             end do
 
 C     log prior
-            logpriorc=log(0.5*dnrm(betac(i), 0.d0, 0.1, 0)+
-     &            0.5*dnrm(betac(i), betapm(i), betapv(i,i), 0))
-            logprioro=log(0.5*dnrm(beta(i), 0.d0, 0.1, 0) + 
-     &           0.5*dnrm(beta(i), betapm(i), betapv(i,i), 0))
+            logpriorc=log(sspi*dnrm(betac(i), 0.d0, 0.1, 0)+
+     &            (1-sspi)*dnrm(betac(i), betapm(i), betapv(i,i), 0))
+            logprioro=log(sspi*dnrm(beta(i), 0.d0, 0.1, 0) + 
+     &           (1-sspi)*dnrm(beta(i), betapm(i), betapv(i,i), 0))
 C     log likelihood
 
             loglikec=0.d0
@@ -237,10 +246,10 @@ C     record   X'gamma in hetersave
 C     =============================================
                
 C     log prior
-               logpriorc=log(0.5d0*dnrm(gammac(i), 0.d0, 0.1d0, 0) +
-     &              0.5d0*dnrm(gammac(i), gammapm(i), gammapv(i,i), 0))
-               logprioro=log(0.5d0*dnrm(gamma(i), 0.d0, 0.1d0, 0) + 
-     &              0.5d0*dnrm(gamma(i), gammapm(i), gammapv(i,i), 0))
+               logpriorc=log(sspi*dnrm(gammac(i), 0.d0, 0.1d0, 0) +
+     &            (1-sspi)*dnrm(gammac(i), gammapm(i), gammapv(i,i), 0))
+               logprioro=log(sspi*dnrm(gamma(i), 0.d0, 0.1d0, 0) + 
+     &            (1-sspi)*dnrm(gamma(i), gammapm(i), gammapv(i,i), 0))
 
 c$$$               logpriorc=dnrm(gammac(i), gammapm(i), gammapv(i,i), 1)
 c$$$               logprioro=dnrm(gamma(i) , gammapm(i), gammapv(i,i), 1) 
@@ -346,6 +355,11 @@ C     acceptance
             alpha=alphac
             acc4=acc4+1
          end if
+
+c     =====================================================
+c     UPDATING sspi
+         sspi = myrbeta(1.d0, 1.d0)
+
 C     ===================================================
 C     TUNING 
 
