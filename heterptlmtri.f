@@ -178,6 +178,10 @@ C     residual
          end do
       end do
 
+c      print*, beta(1,3)
+c      print*, beta(2,3)
+c      print*, beta(3,3)
+
 C     residual matrix
 c$$$      do i=1, nsub
 c$$$         do j=1, q
@@ -217,8 +221,8 @@ c$$$      print*, nsub
 c$$$      print*, parti
 c$$$      print*, whicho
 c$$$      print*, whichn
-c      print*, b(1,1)
-c      print*, b(1,2)
+c$$$c      print*, b(1,1)
+c$$$c      print*, b(1,2)
 c$$$      print*, bz
 c$$$      print*, alpha
 c$$$      print*, detlogl
@@ -236,6 +240,8 @@ c$$$      print*, loglikeo
      &     tmp, ortho, mdzero, loglikeo)
 
 c      print*, loglikeo
+
+c      print*, q
 
 CCCCCCCCCCCC  roll cccccccccccccccccccccc
 
@@ -256,6 +262,11 @@ c         print*, 'begin beta'
             
             do i=1, p
                betac(i,k) = myrnorm(beta(i,k),tune1(k)*sqrt(propv(i,i)))
+
+c$$$               if (k .eq. 3) then 
+c$$$                  print*, betac(i,3)
+c$$$               end if
+
             end do
 
 c            print*, betac
@@ -300,18 +311,33 @@ c$$$            end do
 c     acceptance step
             ratio=loglikec + logpriorc - logprioro - loglikeo
 
-c$$$            print*, loglikec
-c$$$            print*, loglikeo
+c$$$            if (iscan .le. 100) then 
+c$$$               print*, loglikec
+c$$$               print*, loglikeo
+c$$$               
+c$$$               print*, logpriorc
+c$$$               print*, logprioro
 c$$$
-c$$$            print*, logpriorc
-c$$$            print*, logprioro
+c$$$               if (k .eq. 3) then
+c$$$                  print*, betac(1,k)
+c$$$                  print*, beta(1,k)
+c$$$                  print*, betac(2,k)
+c$$$                  print*, beta(2,k)
+c$$$                  print*, betac(3,k)
+c$$$                  print*, beta(3,k)
+c$$$               end if
 c$$$
-c$$$            print*, ratio
+c$$$               print*, ratio
+c$$$
+c$$$            end if
 
             if (log(dble(myrunif(0.d0, 1.d0))).lt. ratio) then 
                loglikeo=loglikec
                do i=1,p
                   beta(i, k)=betac(i,k)
+c$$$                  if (p .eq. 3) then 
+c$$$                     print*, beta(i, k)
+c$$$                  end if
                end do
 c$$$               do k=1, nrec
 c$$$                  v(k) = vc(k)
@@ -877,6 +903,9 @@ c            print*, 'tune1'
                   tune1(i)=0.01
                end if
 
+c               print*, tune1(i)
+c               print*, dble(acc1(i))/dble(att1(i))
+
                if (dble(acc2(i))/dble(att2(i)) .gt. arate) then 
                   tune2(i)=tune2(i) + 
      &                 min(0.1d0,dble(10)/sqrt(dble(iscan)))
@@ -1119,11 +1148,16 @@ c     inital
 
 c      print*, ortho
 c      print*, 'before call cholesky'
-c      print*, Sigma
+c      print*, q
+c$$$      print*, Sigma(1,1)
+c$$$      print*, Sigma(2,1)
+c$$$      print*, Sigma(1,2)
+c$$$      print*, Sigma(2,2)
 
 c     get (LO)^-1, where Simga=LL'
-
       call cholesky(q, Sigma, workmhr)
+
+c      print*, 'after'
 
 c      print*, 'after call cholesky'
 
@@ -1147,11 +1181,30 @@ c     print*, "get LO"
 c      print*, lo
 
 c     so far , inverse sigmainv (2,2) by hand from LO
-      tmp1=lo(1,1)*lo(2,2)-lo(1,2)*lo(2,1)
-      sigmainv(1,1)=1.d0/tmp1*lo(2,2)
-      sigmainv(1,2)=-1.d0/tmp1*lo(2,1)
-      sigmainv(2,1)=-1.d0/tmp1*lo(1,2)
-      sigmainv(2,2)=1.d0/tmp1*lo(1,1)
+c$$$      tmp1=lo(1,1)*lo(2,2)-lo(1,2)*lo(2,1)
+c$$$      sigmainv(1,1)=1.d0/tmp1*lo(2,2)
+c$$$      sigmainv(1,2)=-1.d0/tmp1*lo(2,1)
+c$$$      sigmainv(2,1)=-1.d0/tmp1*lo(1,2)
+c$$$      sigmainv(2,2)=1.d0/tmp1*lo(1,1)
+      tmp1=lo(1,1)*lo(2,2)*lo(3,3) + 
+     &     lo(2,1)*lo(3,2)*lo(1,3) + 
+     &     lo(1,2)*lo(2,3)*lo(3,1) -
+     &     lo(1,3)*lo(2,2)*lo(3,1) - 
+     &     lo(1,2)*lo(2,1)*lo(3,3) - 
+     &     lo(1,1)*lo(2,3)*lo(3,2)
+
+c      print*, lo
+
+      sigmainv(1,1)=1.d0/tmp1*(lo(2,2)*lo(3,3)-lo(2,3)*lo(3,2))
+      sigmainv(1,2)=-1.d0/tmp1*(lo(2,1)*lo(3,3)-lo(2,3)*lo(3,1))
+      sigmainv(2,1)=-1.d0/tmp1*(lo(1,2)*lo(3,3)-lo(1,3)*lo(3,2))
+      sigmainv(2,2)=1.d0/tmp1*(lo(1,1)*lo(3,3)-lo(3,1)*lo(1,3))
+
+      sigmainv(3,3)=1.d0/tmp1*(lo(1,1)*lo(2,2)-lo(1,2)*lo(2,1))
+      sigmainv(1,3)=1.d0/tmp1*(lo(2,1)*lo(3,2)-lo(3,1)*lo(2,2))
+      sigmainv(3,1)=1.d0/tmp1*(lo(1,2)*lo(2,3)-lo(1,3)*lo(2,2))
+      sigmainv(3,2)=-1.d0/tmp1*(lo(1,1)*lo(2,3)-lo(2,1)*lo(1,3))
+      sigmainv(2,3)=-1.d0/tmp1*(lo(1,1)*lo(3,2)-lo(1,2)*lo(3,1))
       
 c      print*, sigmainv
 c      print*, "before loglipt_mucan"
