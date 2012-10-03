@@ -214,8 +214,8 @@ plot.HeterPTlmtri <- function(obj, ask=FALSE){
 
 ######## boot summary ##############
 bootsummary.HeterPTlmtri <- function(obj, truebetatau){
-  mse <- rep(0, 4)
-  for (i in 1:4){
+  mse <- rep(0, 6)
+  for (i in 1:6){
     mse[i] <- mean((obj$coef$betatau[i,-1]-truebetatau[i, -1])^2)
   }
 
