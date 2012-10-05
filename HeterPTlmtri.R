@@ -214,11 +214,15 @@ plot.HeterPTlmtri <- function(obj, ask=FALSE){
 
 ######## boot summary ##############
 bootsummary.HeterPTlmtri <- function(obj, truebetatau){
-  mse <- rep(0, 6)
-  for (i in 1:6){
-    mse[i] <- mean((obj$coef$betatau[i,-1]-truebetatau[i, -1])^2)
-  }
+  mse <- matrix(0, 6, p)
+  ## for (i in 1:6){
+  ##   mse[i] <- mean((obj$coef$betatau[i,-1]-truebetatau[i, -1])^2)
+  ## }
 
+  mse <- (obj$coef$betatau - truebetatau)^2
+
+  mse <- as.vector(t(mse))
+  
   return(list(mse=mse))
 }
 

@@ -306,7 +306,8 @@ BQR.margtri.Summary <- function(foo, truebetatau, comp){
   if (comp==1) beta <- beta.coef[1:3]
   if (comp==2) beta <- beta.coef[4:6]
   if (comp==3) beta <- beta.coef[7:9]
-  mse <- mean((beta[-1]-truebetatau[-1])^2)
+#  mse <- mean((beta[-1]-truebetatau[-1])^2)
+  mse <- (beta-truebetatau)^2
 #  p <- length(truebetatau)
 #  for (j in 2:p)   cover <- prod((truebetatau[j]>lbd[j] && truebetatau[j]<ubd[j]))
 
