@@ -220,9 +220,10 @@ bootsummary.HeterPTlmtri <- function(obj, truebetatau){
   ## }
 
   mse <- (obj$coef$betatau - truebetatau)^2
-
+  mseabs <- obj$coef$betatau - truebetatau
   mse <- as.vector(t(mse))
+  mseabs <- as.vector(t(mseabs))
   
-  return(list(mse=mse))
+  return(list(mse=mse, mseabs=mseabs))
 }
 

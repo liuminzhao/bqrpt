@@ -1,5 +1,5 @@
 ####################################################################
-# Time-stamp: <liuminzhao 07/21/2012 09:58:54>
+# Time-stamp: <liuminzhao 10/24/2012 18:47:35>
 #
 # 2012/03/29 wrap heterptlm.f,
 ####################################################################
@@ -228,13 +228,16 @@ bootsummary.HeterPTlm <- function(obj, truebetatau){
   mse1 <- mean((betatau.coef1[-1]-truebetatau[1,-1])^2)
   mse2 <- mean((betatau.coef2[-1]-truebetatau[2,-1])^2)
 
+  mse1abs <- mean(betatau.coef1[-1]-truebetatau[1,-1])
+  mse2abs <- mean(betatau.coef2[-1]-truebetatau[2,-1])
+
+  
   for (j in 2:p)   {
     cover1 <- prod((truebetatau[1,j]>lbd1[j] && truebetatau[1,j]<ubd1[j]))
     cover2 <- prod((truebetatau[2,j]>lbd2[j] && truebetatau[2,j]<ubd2[j]))
   }
 
-  return(list(beta1=betatau.coef1, lbd1=lbd1, ubd1=ubd1, length1=len1, mse1=mse1, cover1=cover1,
-              beta2=betatau.coef2, lbd2=lbd2, ubd2=ubd2, length2=len2, mse2=mse2, cover2=cover2))
+  return(list(beta1=betatau.coef1, lbd1=lbd1, ubd1=ubd1, length1=len1, mse1=mse1, cover1=cover1, beta2=betatau.coef2, lbd2=lbd2, ubd2=ubd2, length2=len2, mse2=mse2, cover2=cover2, mse1abs=mse1abs, mse2abs=mse2abs))
 
   
 }
