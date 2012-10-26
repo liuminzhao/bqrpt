@@ -211,7 +211,7 @@ BayesQReg<-function(y,X,tau=0.5,M=10,
 list(beta=keepbeta,gamma=keepgamma,
     TruncProb=TruncProb,
     x.grid=x.grid,dense.mn=sumdense,dense.var=sumdense2-sumdense^2,
-     heter=keepheter)
+     heter=keepheter, runs=runs, burn=burn)
 }
 
 

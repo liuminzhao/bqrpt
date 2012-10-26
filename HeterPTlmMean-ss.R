@@ -1,5 +1,5 @@
 ####################################################################
-# Time-stamp: <liuminzhao 09/13/2012 14:32:10>
+# Time-stamp: <liuminzhao 10/25/2012 19:46:25>
 #
 # 2012/09/13 add sspi for spike and slab prior hyperprior pi~Bern(sspi)
 # sspi ~ Beta(1,1) in heterptlm-ss.f
@@ -227,8 +227,8 @@ bootsummary.HeterPTlm <- function(obj, truebetatau){
   len1 <- ubd1-lbd1
   len2 <- ubd2-lbd2
 
-  mse1 <- mean((betatau.coef1[-1]-truebetatau[1,-1])^2)
-  mse2 <- mean((betatau.coef2[-1]-truebetatau[2,-1])^2)
+  mse1 <- betatau.coef1-truebetatau[1,]
+  mse2 <- betatau.coef2-truebetatau[2,]
 
   for (j in 2:p)   {
     cover1 <- prod((truebetatau[1,j]>lbd1[j] && truebetatau[1,j]<ubd1[j]))
