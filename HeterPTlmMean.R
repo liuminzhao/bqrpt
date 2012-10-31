@@ -1,5 +1,5 @@
 ####################################################################
-# Time-stamp: <liuminzhao 10/24/2012 18:47:35>
+# Time-stamp: <liuminzhao 10/30/2012 16:14:19>
 #
 # 2012/03/29 wrap heterptlm.f,
 ####################################################################
@@ -71,7 +71,7 @@ HeterPTlm <- function(y, x, mcmc, prior, quan){
   whicho <- whichn <- rep(0, nrec)
 
   ## DEBUG
-  ratesave <- matrix(0, nburn/100, 2*p+2)
+  ratesave <- matrix(0, nburn/50, 2*p+2)
   tunesave <- matrix(0, nburn, 2*p+2)
 #  hetersave <- rep(0, nburn)
   hetersave <- matrix(0, nburn, p)
@@ -137,7 +137,7 @@ HeterPTlm <- function(y, x, mcmc, prior, quan){
   coef <- list(beta=coef.beta, gamma=coef.gamma, quan=coef.quan,betatau=coef.betatau)
 
   ## DEBUG
-  ratesave <- matrix(foo$ratesave, nburn/100, 2*p+2)
+  ratesave <- matrix(foo$ratesave, nburn/50, 2*p+2)
   tunesave <- matrix(foo$tunesave, nburn, 2*p+2)
   hetersave <- matrix(foo$hetersave, nburn, p)
   
@@ -196,6 +196,12 @@ plot.HeterPTlm <- function(obj, ask=FALSE){
        
   title1 <- "Predictive Error Density"
   plot(obj$grid, obj$dens, ylab="density", main=title1, type='l', lwd=2, xlab="values")
+
+  acf(obj$betasave)
+  acf(obj$gammasave[,2:3])
+  acf(obj$sigmasave)
+  acf(obj$alphasave)
+  
 }
 
 ############################################################

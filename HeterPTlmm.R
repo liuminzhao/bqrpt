@@ -50,6 +50,8 @@ HeterPTlmm <- function(y, X, nsub, mcmc, prior, quan){
   sigmasave <- matrix(0, nsave, 3) # sigma1, sigma2, rho
   alphasave <- rep(0, nsave)
   quansave <- matrix(0, nsave, nquan*q)
+  tunesave <- matrix(0, nburn, p*q+q+5)
+  ratesave <- matrix(0, nburn/50, p*q+q+5)
   
   # GRID
   ngrid <- 200
@@ -108,8 +110,10 @@ HeterPTlmm <- function(y, X, nsub, mcmc, prior, quan){
                   f=as.double(f),
                   nquan=as.integer(nquan),
                   qtile=as.double(quan),
-                  quansave=as.double(quansave)
-              )
+                  quansave=as.double(quansave),
+                  tunesave=as.double(tunesave),
+                  ratesave=as.double(ratesave)                  
+                  )
 
   ####################################
 
@@ -119,7 +123,10 @@ HeterPTlmm <- function(y, X, nsub, mcmc, prior, quan){
   sigmasave <- matrix(foo$sigmasave, nsave, 3)
   quansave <- matrix(foo$quansave, nsave, q*nquan)
   dens <- matrix(foo$f, ngrid, q)
+  tunesave <- matrix(foo$tunesave, nburn, p*q+q+5)
+  ratesave <- matrix(foo$ratesave, nburn/50, p*q+q+5)
 
+  
   betatau <- matrix(0, nquan*q, p)
   for (j in 1:q){
     for (i in 1:nquan){
@@ -151,7 +158,9 @@ HeterPTlmm <- function(y, X, nsub, mcmc, prior, quan){
             mcmc=mcmc,
             prior=prior,
             dens=dens,
-            grid=grid
+            grid=grid,
+            ratesave=ratesave,
+            tunesave=tunesave
             )
 
   class(z) <- "HeterPTlmm"
@@ -169,6 +178,8 @@ summary.HeterPTlmm <- function(obj){
 #################################################
 plot.HeterPTlmm <- function(obj, ask=FALSE){
   par(mfrow=c(obj$p, 2),ask=ask)
+  p <- obj$p
+  q <- obj$q
   for (j in 1:obj$q){
     for (i in 1:obj$p){
       title1 <- paste("Trace of beta" , i-1, sep=" ")
@@ -203,6 +214,18 @@ plot.HeterPTlmm <- function(obj, ask=FALSE){
     title1 <- "Predictive Error Density"
     plot(obj$grid, obj$dens[,i], ylab="density", main=title1, type='l', lwd=2, xlab="values")
   }
+
+
+  apply(obj$betasave, c(1,2) , acf)
+  apply(obj$gammasave[-1,,], c(1,2) , acf)
+  acf(obj$sigmasave)
+  acf(obj$alphasave)
+
+  for (i in 1:(p*q+q+5)){
+    plot(ts(obj$tunesave[,i]),cex=0.5)
+    plot(ts(obj$ratesave[,i]),cex=0.5)
+  }
+
 }
 
 ######## boot summary ##############

@@ -69,7 +69,7 @@ C     FUNCTION
       real*8 myrnorm,myrunif, dnrm, dgamma2
 
 C     DEBUG
-      real*8 ratesave(200, 2*p+2)
+      real*8 ratesave(mcmc(1)/50, 2*p+2)
       real*8 tunesave(mcmc(1), 2*p+2)
       real*8 hetersave(mcmc(1), p)
       real*8 arate
@@ -101,6 +101,7 @@ C      mdzero=0
       do i=1, nquan
          tmpquan(i)=0
       end do
+
 
       mu=0.d0
       ratecount=1
@@ -171,7 +172,8 @@ C     log likelihood
 C     acceptance step
             ratio=loglikec + logpriorc - loglikeo- logprioro
 
-            if (log(dble(myrunif(0.d0, 1.d0))).lt. ratio) then 
+            if ( ratio .gt. 0 .or. log(dble(myrunif(0.d0, 1.d0))).lt. 
+     &           ratio) then 
                loglikeo=loglikec
                beta(i)=betac(i)
                do k=1, nrec
@@ -265,7 +267,8 @@ C     acceptance step
      &              loglikaddc + loglikaddo
 
                
-               if (log(dble(myrunif(0.d0, 1.d0))).lt. ratio) then 
+               if (ratio .gt. 0 .or. log(dble(myrunif(0.d0, 1.d0))).lt. 
+     &              ratio) then 
                   loglikeo=loglikec
                   gamma(i)=gammac(i)
                   gamma(1)=1
@@ -303,7 +306,8 @@ C     acceptance
          ratio=loglikec + logpriorc -loglikeo -logprioro+
      &        logcgkn - logcgko
          
-         if (log(dble(myrunif(0.d0, 1.d0))).lt. ratio) then 
+         if (ratio .gt. 0 .or. log(dble(myrunif(0.d0, 1.d0))).lt. ratio) 
+     &        then 
             loglikeo=loglikec
             sd=sdc
             sigma2=sd**2
@@ -332,7 +336,8 @@ C     acceptance
          ratio=loglikec + logpriorc - loglikeo- logprioro +
      &        logcgkn - logcgko
          
-         if (log(dble(myrunif(0.d0, 1.d0))).lt. ratio) then 
+         if (ratio .gt. 0 .or. log(dble(myrunif(0.d0, 1.d0))).lt. ratio)
+     &        then 
             loglikeo=loglikec
             alpha=alphac
             acc4=acc4+1
@@ -340,9 +345,8 @@ C     acceptance
 C     ===================================================
 C     TUNING 
 
-         if ((att1(1).ge.100).and.(iscan.le. nburn)) then 
+         if ((att1(1).ge.50).and.(iscan.le. nburn)) then 
             do i=1, p
-C               if (dble(acc1(i))/dble(att1(i)) .gt. 0.25d0) then 
                if (dble(acc1(i))/dble(att1(i)) .gt. arate) then 
                   tune1(i)=tune1(i) + 
      &                 min(0.1d0,dble(10)/sqrt(dble(iscan)))
@@ -352,14 +356,21 @@ C               if (dble(acc1(i))/dble(att1(i)) .gt. 0.25d0) then
                end if
                
                if (tune1(i).gt. dble(10)) then 
-                  tune1(i)=100
+                  tune1(i)=10
                end if
 
                if (tune1(i) .lt. 0.01d0) then 
                   tune1(i)=0.01
                end if
 
-C               if (dble(acc2(i))/dble(att2(i)) .gt. 0.25d0) then 
+               ratesave(ratecount, i)=dble(acc1(i))/dble(att1(i))
+               acc1(i)=0
+               att1(i)=0
+               
+            end do
+
+            do i=2,p
+
                if (dble(acc2(i))/dble(att2(i)) .gt. arate) then 
                   tune2(i)=tune2(i) + 
      &                 min(0.1d0,dble(10)/sqrt(dble(iscan)))
@@ -368,9 +379,8 @@ C               if (dble(acc2(i))/dble(att2(i)) .gt. 0.25d0) then
      &                  min(0.1d0,dble(10)/sqrt(dble(iscan)))
                end if  
 
-
                if (tune2(i).gt. dble(10)) then 
-                  tune2(i)=100
+                  tune2(i)=10
                end if
 
                if (tune2(i) .lt. 0.01d0) then 
@@ -378,18 +388,12 @@ C               if (dble(acc2(i))/dble(att2(i)) .gt. 0.25d0) then
                end if
 
 C     SET UP TO 0
-
-
-               ratesave(ratecount, i)=dble(acc1(i))/dble(att1(i))
                ratesave(ratecount, 3+i)=dble(acc2(i))/dble(att2(i))
-               acc1(i)=0
-               att1(i)=0
                acc2(i)=0
                att2(i)=0
 
             end do 
-
-C            if (dble(acc3)/dble(att3) .gt. 0.25d0) then 
+            
             if (dble(acc3)/dble(att3) .gt. arate) then 
                tune3=tune3 + 
      &              min(0.01d0,dble(10)/sqrt(dble(iscan)))
@@ -407,7 +411,6 @@ C            if (dble(acc3)/dble(att3) .gt. 0.25d0) then
                tune3=0.01
             end if
 
-C            if (dble(acc4)/dble(att4) .gt. 0.25d0) then 
             if (dble(acc4)/dble(att4) .gt. arate) then 
                tune4=tune4 + 
 C     &              min(0.01d0,dble(10)/sqrt(dble(iscan)))
@@ -507,14 +510,14 @@ C     postquantile
 C     +===============================================================
 
 C     final MH rate
-      ratesave(100, 1)=dble(acc1(1))/dble(att1(1))
-      ratesave(100, 2)=dble(acc1(2))/dble(att1(2))
-      ratesave(100, 3)=dble(acc1(3))/dble(att1(3))
-      ratesave(100, 4)=0.d0
-      ratesave(100, 5)=dble(acc2(2))/dble(att2(2))
-      ratesave(100, 6)=dble(acc2(3))/dble(att2(3))
-      ratesave(100, 7)=dble(acc3)/dble(att3)
-      ratesave(100, 8)=dble(acc4)/dble(att4)
+c$$$      ratesave(mcmc(1)/50, 1)=dble(acc1(1))/dble(att1(1))
+c$$$      ratesave(mcmc(1)/50, 2)=dble(acc1(2))/dble(att1(2))
+c$$$      ratesave(mcmc(1)/50, 3)=dble(acc1(3))/dble(att1(3))
+c$$$      ratesave(mcmc(1)/50, 4)=0.d0
+c$$$      ratesave(mcmc(1)/50, 5)=dble(acc2(2))/dble(att2(2))
+c$$$      ratesave(mcmc(1)/50, 6)=dble(acc2(3))/dble(att2(3))
+c$$$      ratesave(mcmc(1)/50, 7)=dble(acc3)/dble(att3)
+c$$$      ratesave(mcmc(1)/50, 8)=dble(acc4)/dble(att4)
       
       do i=1, ngrid
          f(i)=f(i)/dble(nsave)

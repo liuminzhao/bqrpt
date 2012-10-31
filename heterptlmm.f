@@ -4,10 +4,10 @@ c===============================================
      &     betapm, betapv, tau, a0b0, gammapm, gammapv, 
      &     nburn, nskip, nsave, ndisp,
      &     betasave, gammasave, sigmasave, alphasave, 
-c     &     whicho, whichn, betac, gammac, sigmac, vc, alphac, 
      &     beta, gamma, alpha, Sigma, propv, arate,
      &     ngrid, grid, f,
-     &     nquan, qtile, quansave)
+     &     nquan, qtile, quansave,
+     &     tunesave, ratesave)
 c$$$      Time-stamp: <2012/07/26>
 c##################################################
       
@@ -38,18 +38,22 @@ C     WORKING
       real*8 b(nsub, q), bz(nsub, q), bc(nsub,q)
       real*8 Sigma(2,2), Sigmac(2,2)
 
-      integer i, iscan, isave, j, nscan, skipcount, k, dispcount, l
+      integer i, iscan, isave, j, nscan, skipcount, k, dispcount, l,m
       real*8 loglikec, loglikeo, logpriorc, logprioro
       real*8 logcgkn, logcgko , loglikaddo, loglikaddc
 
       real*8 ratio, mu(q)
 
 c     TUNING
-      integer att1(q), att2(q), att3(3), att4, att5
-      integer acc1(q), acc2(q), acc3(3), acc4, acc5
-      real*8 tune1(q), tune2(q), tune3(3), tune4, tune5
+      integer att1(p,q), att2(q), att3(3), att4, att5
+      integer acc1(p,q), acc2(q), acc3(3), acc4, acc5
+      real*8 tune1(p,q), tune2(q), tune3(3), tune4, tune5
 
       real*8 arate
+
+      real*8 tunesave(nburn, p*q + q + 5)
+      real*8 ratesave(nburn/50, p*q + q + 5)
+      integer ratecount 
 
 C     CURRENT
       real*8 beta(p, q), gamma(p, q), alpha, sigmavec(3), v(nrec)
@@ -114,14 +118,19 @@ C     INITIAL
          end do
       end do
 
+      do i=1, p
+         do j=1,q
+            tune1(i,j)=0.1
+            acc1(i,j)=0
+            att1(i,j)=0
+         end do
+      end do
+
       do i=1, q
-         tune1(i)=0.1
          tune2(i)=0.1
-         acc1(i)=0
-         att1(i)=0
          acc2(i)=0
          att2(i)=0
-      end do 
+      end do
 
       do i=1,3
          tune3(i)=0.1
@@ -141,6 +150,8 @@ C     INITIAL
       sigmavec(1)=sqrt(Sigma(1,1))
       sigmavec(2)=sqrt(Sigma(2,2))
       sigmavec(3)=Sigma(1,2)/sigmavec(1)/sigmavec(2)
+
+      ratecount = 1
 
       call cpu_time(sec0)
       sec00 = 0.d0
@@ -230,44 +241,46 @@ C=========================================
 
 c         print*, 'begin beta'
          do k=1, q
-            att1(k)=att1(k) + 1
-            do i=1, p
-               do j=1, q
-                  betac(i,j)=beta(i,j)
+            do l=1,p
+               att1(l,k)=att1(l,k) + 1
+               do i=1, p
+                  do j=1, q
+                     betac(i,j)=beta(i,j)
+                  end do
                end do
-            end do
             
-            do i=1, p
-               betac(i,k) = myrnorm(beta(i,k),tune1(k)*sqrt(propv(i,i)))
-            end do
+c            do i=1, p
+               betac(l,k) = myrnorm(beta(l,k),tune1(l,k)
+     &              *sqrt(propv(l,l)))
+c            end do
 
 c            print*, betac
 
-            do i = 1, nsub
-               do j=1,q
-                  tmp1=0.d0
-                  tmp2=0.d0
-                  do l = 1,p
-                     tmp1= tmp1+x(i,l)*betac(l, j)
-                     tmp2= tmp2+x(i,l)*gamma(l, j)
+               do i = 1, nsub
+                  do j=1,q
+                     tmp1=0.d0
+                     tmp2=0.d0
+                     do m = 1,p
+                        tmp1= tmp1+x(i,m)*betac(m, j)
+                        tmp2= tmp2+x(i,m)*gamma(m, j)
+                     end do
+                     bc(i, j) = (y(i,j)-tmp1)/tmp2
                   end do
-                  bc(i, j) = (y(i,j)-tmp1)/tmp2
                end do
-            end do
 
 c     log prior
-            logprioro=0.d0
-            logpriorc=0.d0
+               logprioro=0.d0
+               logpriorc=0.d0
             
-            do i=1, p
-               logpriorc= logpriorc + dnrm(betac(i,k), betapm(i), 
-     &              betapv(i,i),1)
-               logprioro= logprioro + dnrm(beta(i,k), betapm(i), 
-     &              betapv(i,i),1)
-            end do
+c            do i=1, p
+               logpriorc= logpriorc + dnrm(betac(l,k), betapm(l), 
+     &              betapv(l,l),1)
+               logprioro= logprioro + dnrm(beta(l,k), betapm(l), 
+     &              betapv(l,l),1)
+c            end do
 
 c     log likelihood
-            loglikec=0.d0
+               loglikec=0.d0
 
 c$$$            do k=1, nsub
 c$$$               do j=1, q
@@ -275,13 +288,13 @@ c$$$                  bc(k, j) = vc(q*(k-1)+j)
 c$$$               end do
 c$$$            end do
 
-            call loglik_mpt(maxm, q, nsub, parti,
-     &           whicho, whichn, bc, bz, alpha, detlogl,
-     &           linf, lsup, mu, Sigma, 
-     &           tmp, ortho, mdzero, loglikec)
+               call loglik_mpt(maxm, q, nsub, parti,
+     &              whicho, whichn, bc, bz, alpha, detlogl,
+     &              linf, lsup, mu, Sigma, 
+     &              tmp, ortho, mdzero, loglikec)
 
 c     acceptance step
-            ratio=loglikec + logpriorc - logprioro - loglikeo
+               ratio=loglikec + logpriorc - logprioro - loglikeo
 
 c$$$            print*, loglikec
 c$$$            print*, loglikeo
@@ -291,22 +304,23 @@ c$$$            print*, logprioro
 c$$$
 c$$$            print*, ratio
 
-            if (log(dble(myrunif(0.d0, 1.d0))).lt. ratio) then 
-               loglikeo=loglikec
-               do i=1,p
-                  beta(i, k)=betac(i,k)
-               end do
+               if (ratio .gt. 0 .or. log(dble(myrunif(0.d0, 1.d0)))
+     &              .lt. ratio) then 
+                  loglikeo=loglikec
+c               do i=1,p
+                  beta(l, k)=betac(l,k)
+c               end do
 c$$$               do k=1, nrec
 c$$$                  v(k) = vc(k)
 c$$$               end do
-               do i=1, nsub
-                  do j=1, q
-                     b(i, j) = bc(i,j)
+                  do i=1, nsub
+                     do j=1, q
+                        b(i, j) = bc(i,j)
+                     end do
                   end do
-               end do
-               acc1(k)=acc1(k)+1
-            end if
-            
+                  acc1(l,k)=acc1(l,k)+1
+               end if
+            end do
          end do
 
 c========================================
@@ -404,7 +418,8 @@ C     acceptance step
                ratio=loglikec + logpriorc - loglikeo- logprioro - 
      &              loglikaddc + loglikaddo
 
-               if (log(dble(myrunif(0.d0, 1.d0))).lt. ratio) then 
+               if (ratio .gt. 0 .or. log(dble(myrunif(0.d0, 1.d0)))
+     &              .lt. ratio) then 
                   loglikeo=loglikec
                   do i=1,p
                      gamma(i,k)=gammac(i,k)
@@ -458,7 +473,8 @@ c     acceptance
          ratio=loglikec + logpriorc -loglikeo -logprioro+
      &        logcgkn - logcgko
          
-         if (log(dble(myrunif(0.d0, 1.d0))).lt. ratio) then 
+         if (ratio .gt. 0 .or. log(dble(myrunif(0.d0, 1.d0)))
+     &        .lt. ratio) then 
             loglikeo=loglikec
             detlogl=detloglc
             sigmavec(1)=exp(thetac)
@@ -497,7 +513,8 @@ c     acceptance
          ratio=loglikec + logpriorc -loglikeo -logprioro+
      &        logcgkn - logcgko
          
-         if (log(dble(myrunif(0.d0, 1.d0))).lt. ratio) then 
+         if (ratio .gt. 0 .or. log(dble(myrunif(0.d0, 1.d0)))
+     &        .lt. ratio) then 
             loglikeo=loglikec
             detlogl=detloglc
             sigmavec(2)=exp(thetac)
@@ -537,7 +554,8 @@ c         ratio=loglikec + logpriorc -loglikeo -logprioro+
 c     &        logcgkn - logcgko
          ratio=loglikec-loglikeo
          
-         if (log(dble(myrunif(0.d0, 1.d0))).lt. ratio) then 
+         if (ratio .gt. 0 .or. log(dble(myrunif(0.d0, 1.d0)))
+     &        .lt. ratio) then 
             loglikeo=loglikec
             detlogl=detloglc
             sigmavec(3)=thetac
@@ -574,7 +592,8 @@ C     acceptance
          ratio=loglikec + logpriorc - loglikeo- logprioro +
      &        logcgkn - logcgko
          
-         if (log(dble(myrunif(0.d0, 1.d0))).lt. ratio) then 
+         if (ratio .gt. 0 .or. log(dble(myrunif(0.d0, 1.d0)))
+     &        .lt. ratio) then 
             loglikeo=loglikec
             alpha=alphac
             acc4=acc4+1
@@ -604,7 +623,8 @@ c         print*, 'prob here'
 c     acceptance
          ratio=loglikec-loglikeo
 
-         if(log(dble(myrunif(0.d0, 1.d0))).lt.ratio)then
+         if(ratio .gt. 0 .or. log(dble(myrunif(0.d0, 1.d0)))
+     &        .lt.ratio) then
             acc5=acc5+1
             do i=1,q
                do j=1,q
@@ -619,27 +639,38 @@ c=========================================
 c     Tuning
 c ======================================
          
-         if ((att1(1).ge.100).and.(iscan.le.nburn)) then 
+         if ((att1(1,1).ge.50).and.(iscan.le.nburn)) then 
             
 c            print*, 'tune1'
 
             do i=1, q
-               if (dble(acc1(i))/dble(att1(i)) .gt. arate) then 
-                  tune1(i)=tune1(i) + 
-     &                 min(0.1d0,dble(10)/sqrt(dble(iscan)))
-                 else
-                  tune1(i)=tune1(i)-
-     &                  min(0.1d0,dble(10)/sqrt(dble(iscan)))
-               end if
+               do j=1, p
+                  if (dble(acc1(j, i))/dble(att1(j,i)) .gt. arate) then 
+                     tune1(j,i)=tune1(j,i) + 
+     &                    min(0.1d0,dble(10)/sqrt(dble(iscan)))
+                  else
+                     tune1(j,i)=tune1(j,i)-
+     &                    min(0.1d0,dble(10)/sqrt(dble(iscan)))
+                  end if
                
-               if (tune1(i).gt. dble(100)) then 
-                  tune1(i)=100.d0
-               end if
+                  if (tune1(j,i).gt. dble(100)) then 
+                     tune1(j,i)=100.d0
+                  end if
+                  
+                  if (tune1(j,i) .lt. 0.01d0) then 
+                     tune1(j,i)=0.01
+                  end if
 
-               if (tune1(i) .lt. 0.01d0) then 
-                  tune1(i)=0.01
-               end if
+                  ratesave(ratecount, (i-1)*p+j)=dble(acc1(j,i))/
+     &                 dble(att1(j,i))
 
+                  acc1(j,i)=0
+                  att1(j,i)=0
+               end do
+            end do
+
+            do i=1,q
+               
                if (dble(acc2(i))/dble(att2(i)) .gt. arate) then 
                   tune2(i)=tune2(i) + 
      &                 min(0.1d0,dble(10)/sqrt(dble(iscan)))
@@ -657,11 +688,7 @@ c            print*, 'tune1'
                end if
 
 C     SET UP TO 0
-
-c               ratesave(ratecount, i)=dble(acc1(i))/dble(att1(i))
-c               ratesave(ratecount, 3+i)=dble(acc2(i))/dble(att2(i))
-               acc1(i)=0
-               att1(i)=0
+               ratesave(ratecount, p*q+i)=dble(acc2(i))/dble(att2(i))
                acc2(i)=0
                att2(i)=0
 
@@ -687,7 +714,8 @@ c            print*, 'tune3'
                end if
 
 C     SET UP TO 0
-
+               
+               ratesave(ratecount, p*q+q+i)=dble(acc3(i))/dble(att3(i))
                acc3(i)=0
                att3(i)=0
                
@@ -712,17 +740,17 @@ c            print*, 'tune4'
                tune4=0.01
             end if
 
-c            ratesave(ratecount, 7)=dble(acc3)/dble(att3)
-c            ratesave(ratecount, 8)=dble(acc4)/dble(att4)
+
+            ratesave(ratecount, p*q+q+4)=dble(acc4)/dble(att4)
 
             acc4=0
             att4=0
 
-c            ratecount=ratecount+1
+
 
 c            print*, 'tune5'
-
-            if (dble(acc5)/dble(att5) .gt. arate) then 
+            if (dble(acc5)/dble(att5) .gt. 0.44) then 
+c            if (dble(acc5)/dble(att5) .gt. arate) then 
                tune5=tune5 + 
      &              min(0.1d0,dble(10)/sqrt(dble(iscan)))
             else
@@ -731,26 +759,41 @@ c            print*, 'tune5'
             end if  
             
             
-            if (tune5.gt. dble(10)) then 
-               tune5=10.d0
+            if (tune5.gt. dble(100)) then 
+               tune5=100.d0
             end if
             
             if (tune5 .lt. 0.01d0) then 
                tune5=0.01
             end if
 
-c            ratesave(ratecount, 7)=dble(acc3)/dble(att3)
-c            ratesave(ratecount, 8)=dble(acc5)/dble(att5)
+            ratesave(ratecount, p*q+q+5)=dble(acc5)/dble(att5)
 
             acc5=0
             att5=0
 
+            ratecount=ratecount+1
          end if
 
 
 c=================================
 c     Save
 c====================================
+         if (iscan .lt. nburn) then 
+            do i=1, q
+               do j=1, p
+                  tunesave(iscan, (i-1)*p+j)=tune1(j, i)
+               end do 
+            end do
+            do i=1, q
+               tunesave(iscan, p*q+i)=tune2(i)
+            end do
+            do i= 1, 3
+               tunesave(iscan, p*q+q+i)=tune3(i)
+            end do
+            tunesave(iscan, p*q+q+3+1)=tune4
+            tunesave(iscan, p*q+q+5)=tune5
+         end if 
 
          if (iscan.gt. nburn) then 
 c            print*, 'begin save'
