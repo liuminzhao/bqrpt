@@ -1,59 +1,215 @@
 #+TITLE: Quantile Regression Research Diary
 #+INFOJS_OPT: path:scripts/org-info.js view:overview toc:nil
 
+* 2012-11-01
+
+** TODO consider not updating \rho and Ortho 
+
+** TODO [#A] fix bivariate and trivariate mixing and try to beat Reich
+
+*** TODO file:myPTdensityBi.R check mixing for \mu_1, \mu_2, \Sigma, \alpha and Ortho
+
+*** TODO file:myPTdensityTri.R 
+
+** TODO [#B] consider estimates where xi^* = x_i - \bar{x_i} 
+
+** TODO [#C] summarize cases when Reich is not good as PT 
+
+** DONE [#A] check out sample size stuff in univariate case , and choice of M, check out PTdensity 
+
+*** DONE check predictive density with fortran function , with n, with M; file:myPTdensity.R file:myptdensity.f file:myptdensity2.f file:PTLL.R 
+
+    - PTLL.R : get PT log like
+    - myPTdensity : get density function 
+
+      e \sim 5 + 1/2N(-2, 1) + 1/2 N(2, 1) , mixing and acf 
+
+      [[file:image/u3-mixing.png]]
+
+**** DONE with mu as intercept :  =myptdensity1= 
+
+     be careful about f(x) = PTLL(x, \mu, y, ...)  and PTLL(x - \mu, 0, v, ...)
+
+**** DONE with mu as baseline measure parameter =myptdensity2=
+
+     [[file:image/den-test.png]] 
+
+*** DONE M compare
+
+    - n = 100, e \sim 1/2 N(-2, 1) + 1/2 N(2,1) , 20k + 10k * 20, 
+      
+      [[file:image/den-test3.png]]
+      
+    - n = 500, e \sim 1/2 N(-2,1) + 1/2 N(2,1), 20k + 10k * 20, 
+
+      [[file:image/den-test4.png]]
+
+*** DONE try not median 0 ? for PTdensity 
+   1. X_0, X_1, X_00, X_01, ... | Y, mu, sigma, c 
+   2. mu | X_0, Y, sigma, c, \propto \prod X_\epsilon (y_i) \phi(y_i, \mu_i)
+   3. sigma | ... , same 
+   4. c | sigma \mu, Y, G (X_\epsilon)  \propt f(y_i|X_\epsilon
+      ...f(X_\epsilon)
+      = dbeta(X_\epsilon, cj^2,cj^2)
+   5. save sample 
+      f(grid) = \prod X_\epsilon (grid) 2^M \phi(grid, \mu, \sigma)
+*** DONE try n=10k for PTdensity 
+
+    [[file:image/maxm8-10k-normal.pdf]]
+    [[file:image/maxm13-10k-normal.pdf]]
+    
+    [[file:image/maxm8-10k-gamma.pdf]]
+    [[file:image/maxm13-10k-gamma.pdf]]
+   
+*** DONE test n=500 PTdensity , gamma and normal file:test-ptdensity.R 
+
+    - M=8 is quite different with M=6 [[file:image/maxm6-gamma.pdf]] [[file:image/maxm8-gamma.pdf]]
+
+    - M=8 much more wiggler , M=6 smooth
+
+    - M=9 even more wiggler 
+
+    - for mixture noral: [[file:image/maxm6-normal.pdf]] [[file:image/maxm8-normal.pdf]]
+
+
+** DONE check out =gridupptprior= function in multivaraite case with =mdzero= 
+
+   commented =mdzero.ne.0= to make first level prob 1/2 and 1/2, for density estimation 
+
+   - [X] file:heterptlmm.f 
+   - [X] file:heterptlmtri.f 
+
+** DONE check out postquantile in univariate and multivariate case
+
+   no =mdzero= in this function 
+
 * 2012-10-27
 
-** TODO modify file:heterptlm.f file:HeterPTlmMean.R univariate case 
+** DONE read *Handbook of MCMC* 
+
+   [[http://liuminzhao.com/2012/10/28/notes-for-handbook-of-mcmc/][Notes]]
+** DONE modify file:heterptlm.f file:HeterPTlmMean.R univariate case 
 
    =git branch tuning=
 
-   - [X] =if (logr ge 0 || unif < exp(logr))= 
-   - [X] check tune every 50
-     - ratesave (HeterPTlmMean.R)
-     - tunesave
-     - ratecount
-   - [ ] \delta(n) = min(0.01, 1/ $\sqrt{n}$ )
-   - [X] arate = 0.44 (outside function)
-     arate = 0.25 is much more satisfying than arate = 0.44 in terms of mixing of \beta_0 and acf, see file:image/testu3.pdf compare with file:image/x2u3.pdf
-     except sigma2 is not good on acf. may try another variance mixing ? 
+   1) [X] =if (logr ge 0 || unif < exp(logr))= 
+   2) [X] check tune every 50
+      - ratesave (HeterPTlmMean.R)
+      - tunesave
+      - ratecount
+   3) [ ] \delta(n) = min(0.01, 1/ $\sqrt{n}$ )
+   4) [X] arate = 0.44 (outside function)
+      arate = 0.25 is much more satisfying than arate = 0.44 in terms of mixing of \beta_0 and acf, see file:image/testu3.pdf compare with file:image/x2u3.pdf
+      except sigma2 is not good on acf. may try another variance mixing ? 
 
-   - [X] place =acf= in plot.HeterPTlm file:HeterPTlmMean.R 
+   5) [X] place =acf= in plot.HeterPTlm file:HeterPTlmMean.R 
 
 *** TODO if mixing better than previous, do simulation-parallel (univariate) again (4 sets)? 
 
 *** TODO consider a new error can screw up Reich's method? 
 
-*** TODO 1/2 N(-2,1) + 1/2 N(2,1) with quantile (0.25, 0.5, 0.75) ?
+*** DONE [#A] \epsilon \sim 1/2 N(-2,1) + 1/2 N(2,1) with quantile (0.25, 0.5, 0.75) ? file:sim-u3-ho-100.R no spike and slab; on mike
+    
+    [[u3-ho-100-q3.RData][data]] [[sim-u3-ho-100.out][output]] time: 2h for 100 bootstrap, 100 obs
 
-** DONE when n=500, mixing is much worse than n=100 , maybe because of the default M = log_2(n), trying setting M=6 for e3 with n=500, compare with file:image/testu3-500.pdf file:image/testu3-2.pdf file:image/x2ue.pdf
+   
+    #+attr_html: style="float:left;width:20%;margin:3ex"
+    |     |  25% |      |      |   50% |       |       |  75% |      |      |
+    |-----+------+------+------+-------+-------+-------+------+------+------|
+    | /   |    < |      |    > |     < |       |     > |    < |      |    > |
+    |     |  Int |   x1 |   x2 |   Int |    x1 |    x2 |  Int |   x1 |   x2 |
+    | RQ  | 6.19 | 6.64 | 5.66 | 30.12 | 25.23 | 23.64 | 4.37 | 4.64 | 6.56 |
+    | BQR | 4.97 | 2.88 | 2.48 | 15.12 |  4.91 |  4.48 | 4.15 | 3.59 | 2.89 |
+    | PT  | 4.93 | 3.02 | 3.00 |  6.91 |  2.38 |  2.14 | 3.66 | 3.84 | 3.04 |
+
+    #+attr_html: style="float:left;width:20%;margin:3ex"	
+    [[file:image/e3-density.png]]
+    #+html: <br style="clear:both;" />
+    
+    When \tau=0.5, PT dominates. When 25% and 75%, PT is best in terms of intercept, but lose to Reich. However, comparing to rq function, PT is better in all case.
+
+*** DONE [#A] \epsilon_4 \sim 1/4 N(-4,2) + 1/2 N(0,2) + 1/4 N(4,2) with quantile (0.125, 0.5, 0.875) ; file:sim-u4-ho-100.R no spike and slab; on mike
+
+    [[u4-ho-100-q3.RData][data]] [[sim-u4-ho-100.out][output]] time: 2h for 100 bootstrap, 100 obs
+
+
+    #+attr_html: style="float:left;width:10;margin:3ex"
+    |     | 12.5% |      |      |  50% |      |      | 87.5% |      |      |
+    |-----+-------+------+------+------+------+------+-------+------+------|
+    | /   |     < |      |    > |    < |      |    > |     < |      |    > |
+    |     |   Int |   x1 |   x2 |  Int |   x1 |   x2 |   Int |   x1 |   x2 |
+    | RQ  |  38.2 | 43.4 | 33.1 |  9.9 | 14.1 | 12.5 |  28.8 | 37.8 | 37.9 |
+    | BQR |  29.2 | 18.3 | 19.8 | 10.2 | 13.0 | 11.4 |  22.7 | 28.5 | 22.9 |
+    | PT  |  28.4 | 18.9 | 17.2 |  9.4 | 15.5 | 12.4 |  24.6 | 27.4 | 23.2 |
+    #+attr_html: style="float:left;width:20%;margin:3ex"	
+    [[file:image/e4-density.png]]
+    #+html: <br style="clear:both;" />
+       
+    no better than BQR, but in most of cases , especially lower and upper quantile, much better than rq. 
+
+** DONE when n=500, mixing is much worse than n=100 , maybe because of the default M = log_2(n), trying setting M=6 for e3 with n=500, compare with file:image/testu3-500.pdf file:image/testu3-2.pdf file:image/x2u3.pdf
 
    well, when setting M=6 and mixing is no better than M=8, neither is estimates. file:image/testu3-500-m6.pdf
 
-** TODO modify bivariate case , check the mixing and acf to see it works
+** DONE modify bivariate case , check the mixing and acf to see it works
 
    =git branch tuning=
 
-   - [X] =if (logr .ge. 0 .or. unif < exp(logr))= 
-   - [X] check tune every 50
-     - ratesave (HeterPTlmMean.R)
-     - tunesave
-     - ratecount
-   - [ ] \delta(n) = min(0.01, 1/ $\sqrt{n}$ )
-   - [ ] arate = 0.44 (outside function)
-     arate = 0.25 is much more satisfying than arate = 0.44 in terms of mixing of \beta_0 and acf, see file:image/testu3.pdf compare with file:image/x2u3.pdf
-     except sigma2 is not good on acf. may try another variance mixing ? 
+   1) [X] =if (logr .ge. 0 .or. unif < exp(logr))= 
+   2) [X] check tune every 50
+      - ratesave (HeterPTlmMean.R)
+      - tunesave
+      - ratecount
+   3) [ ] \delta(n) = min(0.01, 1/ $\sqrt{n}$ )
+   4) [ ] arate = 0.44 (outside function)
+      arate = 0.25 is much more satisfying than arate = 0.44 in terms of mixing of \beta_0 and acf, see file:image/testu3.pdf compare with file:image/x2u3.pdf
+      except sigma2 is not good on acf. may try another variance mixing ? 
 
-   - [ ] place =acf= in plot.HeterPTlm file:HeterPTlmMean.R 
+   5) [X] place =acf= in plot.HeterPTlm file:HeterPTlmm.R 
 
-   - [ ] update \beta and \gamma componentwisely
-     - att[1-2], acc[1-2], tune[1-2]
+   6) [ ] update \beta and \gamma componentwisely
+      - att[1-2], acc[1-2], tune[1-2]
        
-       \beta is fine. but when update \gamma componentwisely, there is error (no idea so far) 
+	\beta is fine. but when update \gamma componentwisely, there is error (no idea so far) 
 
+   7) time: previous vectorize 357s; after: 509s for \beta vectorize 
 
-   - time: previous vectorize 357s; after: 509s for \beta vectorize 
+   8) add =tunesave= and =ratesave= to check tuning progress 
+     
+      while Ortho keeps high acceptance rate, even after increasing variance of the proposal distribution
+
+   9) [ ] check Jara =PTlmm.R= function to see its aratep for Ortho. 
+
+   10) Mixing is no better than before after updating \beta componentwisely. check file:image/b1-bcomp.pdf file:image/b3-bcomp.pdf file:image/b3-bcomp.pdf compared with file:image/x2b1.pdf file:image/x2b2.pdf file:image/x2b3.pdf 
 
 ** TODO modify trivariate case
+
+   =git branch tuning=
+
+   1) [X] =if (logr .ge. 0 .or. unif < exp(logr))= 
+   2) [X] check tune every 50
+      - ratesave (HeterPTlmMean.R)
+      - tunesave
+      - ratecount
+   3) [ ] \delta(n) = min(0.01, 1/ $\sqrt{n}$ )
+   4) [X] arate = 0.44 (outside function)
+      arate = 0.25 is much more satisfying than arate = 0.44 in terms of mixing of \beta_0 and acf, see file:image/testu3.pdf compare with file:image/x2u3.pdf
+      except sigma2 is not good on acf. may try another variance mixing ? 
+
+   5) [ ] place =acf= in plot.HeterPTlm file:HeterPTlmtri.R 
+
+   6) [ ] update \beta and \gamma componentwisely
+      - att[1-2], acc[1-2], tune[1-2]
+       
+	\beta is fine. but when update \gamma componentwisely, there is error (no idea so far) 
+
+   7) [ ] add =tunesave= and =ratesave= to check tuning progress 
+     
+      while Ortho keeps high acceptance rate, even after increasing variance of the proposal distribution
+
+   8) [ ] check Jara =PTlmm.R= function to see its aratep for Ortho. 
+
+   9) Mixing is no better than before after updating \beta componentwisely. check
 
 ** TODO [#B] update \Sigma together in bi/tri case , like inverse Wishart?
 ** TODO ask about project
@@ -68,9 +224,6 @@
   - [ ] predictive, prediction purpose
   - [ ] \beta prior $\beta \sim N(0, V)$ where $V$ is a large cov matrix
   - [ ] random walk 
-** DONE read *Handbook of MCMC* 
-
-   [[http://liuminzhao.com/2012/10/28/notes-for-handbook-of-mcmc/][Notes]]
 
 
 * 2012-10-22

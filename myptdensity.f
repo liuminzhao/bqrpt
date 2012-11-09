@@ -5,7 +5,7 @@
      &     musave, sigmasave, alphasave, fsave,
      &     ratesave, tunesave)
 
-c$$$Time-stamp: <liuminzhao 11/04/2012 23:07:10>
+c$$$Time-stamp: <liuminzhao 11/05/2012 14:30:59>
 
       implicit none
 
@@ -214,7 +214,7 @@ C     density estimate
                do i=1,ngrid
                   loglikec=0.d0
                   call gridupptprior(grid(i),maxm,mdzero ,n,
-     &                 alpha,0.d0,sigma2, v,
+     &                 alpha, mu, sigma2, y,
      &                 whicho,whichn,loglikec)
                   f(i)=f(i)+exp(loglikec)  
                   fsave(isave, i) = exp(loglikec)

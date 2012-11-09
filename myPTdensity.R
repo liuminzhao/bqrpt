@@ -95,7 +95,7 @@ rMN3 <- function(n){
   posneg <- rbinom(n,1,0.5)
   (1-posneg)*rnorm(n, -2, 1) + posneg*rnorm(n, 2,1)
 }
-y <- rMN3(500)
+y <- rMN3(100) + 5
 mcmc <- c(10000, 1000, 10)
 mcmc <- c(20000, 10000, 20)
 a <- myPTdensity(y, mcmc)
@@ -111,11 +111,16 @@ plot(a$tunesave[,1])
 plot(a$tunesave[,2])
 plot(a$tunesave[,3])
 
-plot(a2$foo$musave)
-plot(a2$foo$sigmasave)
-plot(a2$foo$alphasave)
-
+png('u3-mixing.png')
+par(mfrow = c(4, 2))
+plot(ts(a$foo$musave))
+plot(ts(a$foo$sigmasave))
+plot(ts(a$foo$alphasave))
+acf(a$foo$musave)
+acf(a$foo$sigmasave)
+acf(a$foo$alphasave)
 plot(a$foo$grid, a$foo$f, 'l')
+dev.off()
 
 plot(a$foo$grid, a$foo$f, 'l', col='black')
 lines(a2$foo$grid, a2$foo$f, 'l', col='red', lty=2)

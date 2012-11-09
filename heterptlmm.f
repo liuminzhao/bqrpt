@@ -1330,11 +1330,11 @@ c++++ Output
           end do
       end if  
 
-      if(mdzero.ne.0)then 
-         logprioro=logprioro+
-     &    log(2.d0*alpha+dble(2*countero))-
-     &    log(2.d0*alpha+dble(nsubject))
-      end if 
+c$$$      if(mdzero.ne.0)then 
+c$$$         logprioro=logprioro+
+c$$$     &    log(2.d0*alpha+dble(2*countero))-
+c$$$     &    log(2.d0*alpha+dble(nsubject))
+c$$$      end if 
 
       if(countero.eq.0)go to 1
 

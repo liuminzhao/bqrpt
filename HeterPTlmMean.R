@@ -1,5 +1,5 @@
 ####################################################################
-# Time-stamp: <liuminzhao 10/30/2012 16:14:19>
+# Time-stamp: <liuminzhao 10/31/2012 18:47:46>
 #
 # 2012/03/29 wrap heterptlm.f,
 ####################################################################
@@ -210,6 +210,20 @@ summary.HeterPTlm <- function(obj){
   list(coef=obj$coef,n=obj$n, p=obj$p, quan=obj$quan)
 }
 ###########################################################
+bootsummary <- function(obj, truebetatau, d){
+  p <- obj$p
+  quan <- obj$quan
+  runs <- obj$mcmc$nsave
+
+  betatau1 <- obj$betasave + obj$gammasave*as.numeric(obj$quansave[,d])
+  betatau.coef1 <- apply(betatau1, 2, mean)
+  mse <- betatau.coef1-truebetatau
+
+  return(list(mse=mse))
+}
+
+
+
 bootsummary.HeterPTlm <- function(obj, truebetatau){
   nquan <- dim(truebetatau)[1]
   p <- obj$p
@@ -231,13 +245,9 @@ bootsummary.HeterPTlm <- function(obj, truebetatau){
   len1 <- ubd1-lbd1
   len2 <- ubd2-lbd2
 
-  mse1 <- mean((betatau.coef1[-1]-truebetatau[1,-1])^2)
-  mse2 <- mean((betatau.coef2[-1]-truebetatau[2,-1])^2)
+  mse1 <- betatau.coef1-truebetatau[1,]
+  mse2 <- betatau.coef2-truebetatau[2,]
 
-  mse1abs <- mean(betatau.coef1[-1]-truebetatau[1,-1])
-  mse2abs <- mean(betatau.coef2[-1]-truebetatau[2,-1])
-
-  
   for (j in 2:p)   {
     cover1 <- prod((truebetatau[1,j]>lbd1[j] && truebetatau[1,j]<ubd1[j]))
     cover2 <- prod((truebetatau[2,j]>lbd2[j] && truebetatau[2,j]<ubd2[j]))
