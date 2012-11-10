@@ -296,15 +296,8 @@ rASL<-function(n,lambda,tau){
 BQR.marg.Summary <- function(foo, truebetatau, comp){
 
   beta.coef <- apply(foo$beta[1000:5000,],2,mean)
-#  lbd <- apply(foo$beta[1000:5000,], 2, function(x) quantile(x, 0.025))
-#  ubd <- apply(foo$beta[1000:5000,], 2, function(x) quantile(x, 0.975))
-#  len <- ubd-lbd
   if (comp==1) beta <- beta.coef[1:3] else beta <- beta.coef[-(1:3)]
-  mse <- mean((beta[-1]-truebetatau[-1])^2)
-#  p <- length(truebetatau)
-#  for (j in 2:p)   cover <- prod((truebetatau[j]>lbd[j] && truebetatau[j]<ubd[j]))
-
-#  return(list(beta=beta.coef, lbd=lbd, ubd=ubd, length=len, mse=mse, cover=cover))
+  mse <- beta - truebetatau
   return(list(mse=mse))
 }
 

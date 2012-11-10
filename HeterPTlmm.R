@@ -230,13 +230,9 @@ plot.HeterPTlmm <- function(obj, ask=FALSE){
 
 ######## boot summary ##############
 bootsummary.HeterPTlmm <- function(obj, truebetatau){
-  mse <- rep(0, 4)
-  mseabs <- rep(0, 4)
-  for (i in 1:4){
-    mse[i] <- mean((obj$coef$betatau[i,-1]-truebetatau[i, -1])^2)
-    mseabs[i] <- mean(obj$coef$betatau[i,-1]-truebetatau[i, -1])
-  }
 
-  return(list(mse=mse, mseabs=mseabs))
+  mse <- c(t(obj$coef$betatau - truebetatau))
+
+  return(list(mse = mse))
 }
 

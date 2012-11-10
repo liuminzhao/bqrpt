@@ -526,43 +526,43 @@ c     acceptance
 
 c     sigmavec(3): rho
          att3(3)=att3(3)+1
-         theta=sigmavec(3)
-         thetac=myrnorm(theta, tune3(3))
-         thetac=max(thetac, -0.99)
-         thetac=min(thetac, 0.99)
-         Sigmac(1,1)=sigmavec(1)**2
-         Sigmac(2,2)=sigmavec(2)**2
-         Sigmac(1,2)=thetac*sigmavec(1)*sigmavec(2)
-         Sigmac(2,1)=thetac*sigmavec(1)*sigmavec(2)
-
-         detloglc=log(Sigmac(1,1)*Sigmac(2,2)-Sigmac(1,2)**2)
-         
-c     likelihood
-         loglikec=0.d0
-
-         call loglik_mpt(maxm, q, nsub, parti,
-     &        whicho, whichn, b, bz, alpha, detloglc,
-     &        linf, lsup, mu, Sigmac, 
-     &        tmp, ortho, mdzero, loglikec)
-
-c     log prior
-c         logpriorc=-tau(1)*thetac-tau(2)*exp(-2*thetac)/2
-c         logprioro=-tau(1)*theta-tau(2)*exp(-2*theta)/2
-
-c     acceptance
-c         ratio=loglikec + logpriorc -loglikeo -logprioro+
-c     &        logcgkn - logcgko
-         ratio=loglikec-loglikeo
-         
-         if (ratio .gt. 0 .or. log(dble(myrunif(0.d0, 1.d0)))
-     &        .lt. ratio) then 
-            loglikeo=loglikec
-            detlogl=detloglc
-            sigmavec(3)=thetac
-            Sigma(1,2)=Sigmac(1,2)
-            Sigma(2,1)=Sigmac(2,1)
-            acc3(3)=acc3(3)+1
-         end if
+c$$$         theta=sigmavec(3)
+c$$$         thetac=myrnorm(theta, tune3(3))
+c$$$         thetac=max(thetac, -0.99)
+c$$$         thetac=min(thetac, 0.99)
+c$$$         Sigmac(1,1)=sigmavec(1)**2
+c$$$         Sigmac(2,2)=sigmavec(2)**2
+c$$$         Sigmac(1,2)=thetac*sigmavec(1)*sigmavec(2)
+c$$$         Sigmac(2,1)=thetac*sigmavec(1)*sigmavec(2)
+c$$$
+c$$$         detloglc=log(Sigmac(1,1)*Sigmac(2,2)-Sigmac(1,2)**2)
+c$$$         
+c$$$c     likelihood
+c$$$         loglikec=0.d0
+c$$$
+c$$$         call loglik_mpt(maxm, q, nsub, parti,
+c$$$     &        whicho, whichn, b, bz, alpha, detloglc,
+c$$$     &        linf, lsup, mu, Sigmac, 
+c$$$     &        tmp, ortho, mdzero, loglikec)
+c$$$
+c$$$c     log prior
+c$$$c         logpriorc=-tau(1)*thetac-tau(2)*exp(-2*thetac)/2
+c$$$c         logprioro=-tau(1)*theta-tau(2)*exp(-2*theta)/2
+c$$$
+c$$$c     acceptance
+c$$$c         ratio=loglikec + logpriorc -loglikeo -logprioro+
+c$$$c     &        logcgkn - logcgko
+c$$$         ratio=loglikec-loglikeo
+c$$$         
+c$$$         if (ratio .gt. 0 .or. log(dble(myrunif(0.d0, 1.d0)))
+c$$$     &        .lt. ratio) then 
+c$$$            loglikeo=loglikec
+c$$$            detlogl=detloglc
+c$$$            sigmavec(3)=thetac
+c$$$            Sigma(1,2)=Sigmac(1,2)
+c$$$            Sigma(2,1)=Sigmac(2,1)
+c$$$            acc3(3)=acc3(3)+1
+c$$$         end if
 
 c========================================
 c     Alpha 
@@ -606,34 +606,34 @@ c========================================
 c         print*, 'begin ortho'
 
          att5=att5+1
-         do i=1,q
-            do j=1,q   
-               workmr2c(i,j)=myrnorm(workmr2(i,j),tune5)
-            end do
-         end do
-         call rhaar2(workmr1,workmr2,q,orthoc)
-         
-         call loglik_mpt(maxm, q, nsub, parti,
-     &        whicho, whichn, b, bz, alpha, detlogl,
-     &        linf, lsup, mu, Sigma, 
-     &        tmp, orthoc, mdzero, loglikec)
-
-c         print*, 'prob here' 
-
-c     acceptance
-         ratio=loglikec-loglikeo
-
-         if(ratio .gt. 0 .or. log(dble(myrunif(0.d0, 1.d0)))
-     &        .lt.ratio) then
-            acc5=acc5+1
-            do i=1,q
-               do j=1,q
-                  ortho(i,j)=orthoc(i,j)
-                  workmr2(i,j)=workmr2c(i,j)
-               end do
-            end do
-            loglikeo=loglikec
-         end if
+c$$$         do i=1,q
+c$$$            do j=1,q   
+c$$$               workmr2c(i,j)=myrnorm(workmr2(i,j),tune5)
+c$$$            end do
+c$$$         end do
+c$$$         call rhaar2(workmr1,workmr2,q,orthoc)
+c$$$         
+c$$$         call loglik_mpt(maxm, q, nsub, parti,
+c$$$     &        whicho, whichn, b, bz, alpha, detlogl,
+c$$$     &        linf, lsup, mu, Sigma, 
+c$$$     &        tmp, orthoc, mdzero, loglikec)
+c$$$
+c$$$c         print*, 'prob here' 
+c$$$
+c$$$c     acceptance
+c$$$         ratio=loglikec-loglikeo
+c$$$
+c$$$         if(ratio .gt. 0 .or. log(dble(myrunif(0.d0, 1.d0)))
+c$$$     &        .lt.ratio) then
+c$$$            acc5=acc5+1
+c$$$            do i=1,q
+c$$$               do j=1,q
+c$$$                  ortho(i,j)=orthoc(i,j)
+c$$$                  workmr2(i,j)=workmr2c(i,j)
+c$$$               end do
+c$$$            end do
+c$$$            loglikeo=loglikec
+c$$$         end if
 
 c=========================================
 c     Tuning
