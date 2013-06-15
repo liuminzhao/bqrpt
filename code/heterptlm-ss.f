@@ -1,23 +1,20 @@
+c===========================================================
+c$$$  Time-stamp: <liuminzhao 06/15/2013 16:03:26>
+c$$$
+c$$$  2012/09/13 add sspi as spike-slab hyperprior ~ beta(1,1)
+c$$$  pi ~ Bern(sspi)
+c$$$  2012/09/08 modify spike-slab prior
+c$$$  2012/03/26 set back to 0 for acc* when tuning
+c$$$  add ratesave(100, 2p-1), tunesave(nburn, 2p-1)
+c$$$  2012/03/13 add postquantile
+c$$$  2012/03/09 mcmc fortran for myheterptlm13.R
 c==========================================================
       subroutine heterptlmss(maxm,mdzero, nrec, p, x, y, betapm, betapv,
-     &     tau, betasave, gammasave, gammapm,gammapv, alpha, beta,gamma,  
+     &     sigmap,betasave,gammasave,gammapm,gammapv, alpha, beta,gamma,  
      &     nsave, sigma2, v, a0b0, mcmc, whicho, whichn,
      &     sigmasave, alphasave, f, ngrid,grid, quan, quansave, nquan,
      &     ratesave, tunesave, hetersave,
      &     propv, arate)
-c===========================================================
-c$$$
-C$$$      Time-stamp: <liuminzhao 03/26/2012 13:37:32>
-c
-c         2012/09/13 add sspi as spike-slab hyperprior ~ beta(1,1)
-c         pi ~ Bern(sspi)
-c$$$      2012/09/08 modify spike-slab prior
-c$$$      2012/03/26 set back to 0 for acc* when tuning
-C         add ratesave(100, 2p-1), tunesave(nburn, 2p-1)
-c$$$      2012/03/13 add postquantile
-c$$$      2012/03/09 mcmc fortran for myheterptlm13.R
-c$$$
-c===========================================================
       implicit none
 
 C     PT parameter
@@ -28,8 +25,10 @@ C     obs
       real*8 x(nrec,p) , y(nrec), quan(nquan)
 
 C     prior
-      real*8 betapm(p), betapv(p,p)
-      real*8 tau(2)
+      real*8 betapm(p), betapv(p,p), gammapm(p), gammapv(p,p)
+      real*8 sigmap(2), a0b0(2)
+c     Spike and slab
+      real*8 sspib(p), sspig(p), sspibc, sspigc
 
 C     mcmc
       integer mcmc(4), nburn, nskip, nsave,ndisp
@@ -37,23 +36,22 @@ C     mcmc
 C     store
       real*8 betasave(nsave, p), gammasave(nsave, p)
       real*8 sigmasave(nsave), alphasave(nsave),quansave(nsave,nquan)
-      real*8 gammapv(p,p), gammapm(p), f(ngrid), grid(ngrid)
+      real*8 f(ngrid), grid(ngrid)
 
 C     current
-      real*8 alpha, beta(p), gamma(p),  sigma2, v(nrec)
+      real*8 beta(p), gamma(p), sigma2, alpha, v(nrec)
 
-C     external working
+C     external working and candidate
       integer whicho(nrec), whichn(nrec)
-      real*8 betac(p) , gammac(p)
+      real*8 betac(p) , gammac(p), sigmac, alphac
       real*8 vc(nrec)
-      real*8 a0b0(2)
+      real*8 sd,sdc, theta, thetac
 
 C     internal working
       integer i, iscan, isave, j, nscan, skipcount,k , discount
-      real*8 alphac
       real*8 logcgkn, logcgko, loglikec, loglikeo, logpriorc, logprioro
       real*8 loglikaddc, loglikaddo
-      real*8 mu,   rnorm, sd,sdc, theta, thetac, ratio
+      real*8 mu,   rnorm, ratio
 
       real*8 tmp1, tmp2, tmpquan(nquan)
       real runif
@@ -65,11 +63,11 @@ C     tunning
       integer acc1(p), acc2(p), acc3, acc4
       real*8 propv(p,p)
 
-C     cpu
+C     CPU
       real*8 sec00, sec0, sec1, sec
 
 C     FUNCTION
-      real*8 myrnorm,myrunif, dnrm, dgamma2, myrbeta
+      real*8 myrnorm,myrunif, dnrm, dgamma2, myrbeta,mydbeta
 
 C     DEBUG
       real*8 ratesave(200, 2*p+2)
@@ -77,8 +75,6 @@ C     DEBUG
       real*8 hetersave(mcmc(1), p)
       real*8 arate
 
-c     Spike and slab
-      real*8 sspi
 c=======================================
 C     initial
       nburn=mcmc(1)
@@ -97,6 +93,8 @@ C      mdzero=0
          att1(i)=0
          acc2(i)=0
          att2(i)=0
+         sspib(i)=0.5
+         sspig(i)=0.5
       end do
       tune3=0.1
       tune4=0.1
@@ -112,7 +110,7 @@ C      mdzero=0
       mu=0.d0
       ratecount=1
 
-      sspi=0.5
+
 
 C----------------------------------------------
 C     start mcmc
@@ -121,7 +119,7 @@ C---------------------------------------------
       isave=0
       skipcount=0
       discount=0
-      nscan = nburn + (nskip + 1)*(nsave)
+      nscan = nburn + nskip * nsave
 
       call cpu_time(sec0)
       sec00 = 0.d0
@@ -168,11 +166,15 @@ C     BETA
             end do
 
 C     log prior
-            logpriorc=log(sspi*dnrm(betac(i), 0.d0, 0.1, 0)+
-     &            (1-sspi)*dnrm(betac(i), betapm(i), betapv(i,i), 0))
-            logprioro=log(sspi*dnrm(beta(i), 0.d0, 0.1, 0) +
-     &           (1-sspi)*dnrm(beta(i), betapm(i), betapv(i,i), 0))
+            logpriorc=log(sspib(i)*dnrm(betac(i), 0.d0, 0.01, 0)+
+     &    (1-sspib(i))*dnrm(betac(i),betapm(i),sqrt(betapv(i,i)),0))
+            logprioro=log(sspib(i)*dnrm(beta(i), 0.d0, 0.01, 0) +
+     &    (1-sspib(i))*dnrm(beta(i), betapm(i), sqrt(betapv(i,i)),0))
 C     log likelihood
+
+c$$$            loglikeo = 0.d0
+c$$$            call loglik_unippt(nrec,mdzero, maxm, alpha, mu, sigma2, v,
+c$$$     &           whicho, whichn, loglikeo)
 
             loglikec=0.d0
             call loglik_unippt(nrec,mdzero, maxm, alpha, mu, sigma2, vc,
@@ -246,16 +248,10 @@ C     record   X'gamma in hetersave
 C     =============================================
 
 C     log prior
-               logpriorc=log(sspi*dnrm(gammac(i), 0.d0, 0.1d0, 0) +
-     &            (1-sspi)*dnrm(gammac(i), gammapm(i), gammapv(i,i), 0))
-               logprioro=log(sspi*dnrm(gamma(i), 0.d0, 0.1d0, 0) +
-     &            (1-sspi)*dnrm(gamma(i), gammapm(i), gammapv(i,i), 0))
-
-c$$$               logpriorc=dnrm(gammac(i), gammapm(i), gammapv(i,i), 1)
-c$$$               logprioro=dnrm(gamma(i) , gammapm(i), gammapv(i,i), 1)
-
-C               tmp1=dnrm(gamma(i), 0.d0, 0.1d0, 0)
-C               print*, tmp1
+               logpriorc=log(sspig(i)*dnrm(gammac(i), 0.d0, 0.01, 0) +
+     &  (1-sspig(i))*dnrm(gammac(i), gammapm(i), sqrt(gammapv(i,i)),0))
+               logprioro=log(sspig(i)*dnrm(gamma(i), 0.d0, 0.01, 0) +
+     &  (1-sspig(i))*dnrm(gamma(i), gammapm(i), sqrt(gammapv(i,i)),0))
 
 C     log likelihood
 
@@ -312,10 +308,12 @@ C     likelihood
 
 
 C     log prior
-         logpriorc=-tau(1)*thetac - tau(2)*exp(-2*thetac)/2
-         logprioro=-tau(1)*theta-tau(2)*exp(-2*theta)/2
+c$$$         logpriorc=-tau(1)*thetac - tau(2)*exp(-2*thetac)/2
+c$$$         logprioro=-tau(1)*theta-tau(2)*exp(-2*theta)/2
 C         logprioro=0.d0
 C         logpriorc=0.d0
+         logpriorc = dgamma2(sdc, sigmap(1), sigmap(2), 1)
+         logprioro = dgamma2(sd, sigmap(1), sigmap(2), 1)
 
 C     acceptance
          ratio=loglikec + logpriorc -loglikeo -logprioro+
@@ -357,15 +355,42 @@ C     acceptance
          end if
 
 c     =====================================================
-c     UPDATING sspi
-         sspi = myrbeta(1.d0, 1.d0)
+c     UPDATING sspib and sspig
+         do i = 1, p
+            sspibc = myrbeta(1.d0, 1.d0)
+            tmp1 = mydbeta(sspib(i), 1.d0, 1.d0, 1) + log(sspib(i)*
+     &           dnrm(beta(i), 0.d0, 0.01, 0) +
+     &    (1-sspib(i))*dnrm(beta(i), betapm(i), sqrt(betapv(i,i)),0))
+            tmp2 = mydbeta(sspibc, 1.d0, 1.d0, 1) + log(sspibc*
+     &           dnrm(beta(i), 0.d0, 0.01, 0) +
+     &    (1-sspibc)*dnrm(beta(i), betapm(i), sqrt(betapv(i,i)),0))
+            ratio = tmp2 - tmp1
+            if (log(dble(myrunif(0.d0, 1.d0))).lt.ratio) then
+               sspib(i) = sspibc
+            end if
+         end do
+
+         do i = 2, p
+            sspigc = myrbeta(1.d0, 1.d0)
+            tmp1 = mydbeta(sspig(i), 1.d0, 1.d0, 1) + log(sspig(i)
+     &           *dnrm(gamma(i), 0.d0, 0.01, 0) +
+     &  (1-sspig(i))*dnrm(gamma(i), gammapm(i), sqrt(gammapv(i,i)),0))
+
+            tmp2 = mydbeta(sspigc, 1.d0, 1.d0, 1) + log(sspigc*
+     &         dnrm(gamma(i), 0.d0, 0.01, 0) +
+     &  (1-sspigc)*dnrm(gamma(i), gammapm(i), sqrt(gammapv(i,i)),0))
+            ratio = tmp2 - tmp1
+            if (log(dble(myrunif(0.d0, 1.d0))).lt.ratio) then
+               sspig(i) = sspigc
+            end if
+         end do
+
 
 C     ===================================================
 C     TUNING
 
          if ((att1(1).ge.100).and.(iscan.le. nburn)) then
             do i=1, p
-C               if (dble(acc1(i))/dble(att1(i)) .gt. 0.25d0) then
                if (dble(acc1(i))/dble(att1(i)) .gt. arate) then
                   tune1(i)=tune1(i) +
      &                 min(0.1d0,dble(10)/sqrt(dble(iscan)))
@@ -382,7 +407,6 @@ C               if (dble(acc1(i))/dble(att1(i)) .gt. 0.25d0) then
                   tune1(i)=0.01
                end if
 
-C               if (dble(acc2(i))/dble(att2(i)) .gt. 0.25d0) then
                if (dble(acc2(i))/dble(att2(i)) .gt. arate) then
                   tune2(i)=tune2(i) +
      &                 min(0.1d0,dble(10)/sqrt(dble(iscan)))
@@ -402,7 +426,6 @@ C               if (dble(acc2(i))/dble(att2(i)) .gt. 0.25d0) then
 
 C     SET UP TO 0
 
-
                ratesave(ratecount, i)=dble(acc1(i))/dble(att1(i))
                ratesave(ratecount, 3+i)=dble(acc2(i))/dble(att2(i))
                acc1(i)=0
@@ -412,7 +435,6 @@ C     SET UP TO 0
 
             end do
 
-C            if (dble(acc3)/dble(att3) .gt. 0.25d0) then
             if (dble(acc3)/dble(att3) .gt. arate) then
                tune3=tune3 +
      &              min(0.01d0,dble(10)/sqrt(dble(iscan)))
@@ -420,7 +442,6 @@ C            if (dble(acc3)/dble(att3) .gt. 0.25d0) then
                tune3=tune3-
      &              min(0.01d0,dble(10)/sqrt(dble(iscan)))
             end if
-
 
             if (tune3.gt. dble(10)) then
                tune3=10
@@ -430,7 +451,6 @@ C            if (dble(acc3)/dble(att3) .gt. 0.25d0) then
                tune3=0.01
             end if
 
-C            if (dble(acc4)/dble(att4) .gt. 0.25d0) then
             if (dble(acc4)/dble(att4) .gt. arate) then
                tune4=tune4 +
 C     &              min(0.01d0,dble(10)/sqrt(dble(iscan)))
@@ -481,7 +501,7 @@ C         print*, tune1
 
          if (iscan.gt. nburn) then
             skipcount = skipcount+1
-            if (skipcount.gt.nskip) then
+            if (skipcount.ge.nskip) then
 
 C               print* , beta , gamma
 
@@ -555,6 +575,7 @@ c     This subroutine evaluate the log-likelihood for
 c     the baseline parameters in a random effect model using
 c     in a marginal univariate partially specified PT.
 c
+c     mdzero=0: fix median at 0; otherwise not, update first level
 c     Alejandro Jara, 2007
 c=======================================================================
       implicit none

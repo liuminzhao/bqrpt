@@ -1,5 +1,5 @@
 ####################################################################
-##' Time-stamp: <liuminzhao 06/07/2013 14:35:17>
+##' Time-stamp: <liuminzhao 06/15/2013 17:05:33>
 ##'
 ##' 2012/03/29 wrap heterptlm.f,
 ####################################################################
@@ -16,9 +16,10 @@
 ##' @param mcmc
 ##' @param prior
 ##' @param quan
+##' @param method
 ##' @return
 ##' @author Minzhao Liu, Mike Daniels
-HeterPTlm <- function(y, x, mcmc, prior, quan, method = "mean"){
+HeterPTlm <- function(y, x, mcmc, prior, quan = 0.5, method = "ss"){
 
   ## LOAD DYN
   if (method == 'mean' | method == 'median'){
@@ -54,12 +55,22 @@ HeterPTlm <- function(y, x, mcmc, prior, quan, method = "mean"){
   if (is.null(prior$mdzero)) {mdzero <- 0}  else  mdzero <- prior$mdzero
 
   ## PRIOR
-  betapm <- prior$betapm
-  betapv <- prior$betapv
-  gammapm <- prior$gammapm
-  gammapv <- prior$gammapv
-  tau <- prior$tau
-  a0b0 <- prior$a0b0
+  if (is.null(prior)){
+    betapm <- solve(t(x)%*%x)%*%t(x)%*%y
+    res <- y - x%*%betapm
+    betapv <- solve(t(x)%*%x)*sum(res^2)/(nrec - p)
+    gammapm <- rep(0, p)
+    gammapv <- diag(p)*100
+    sigmap <- c(2, 1/2)
+    a0b0 <- c(1, 1)
+  } else {
+    betapm <- prior$betapm
+    betapv <- prior$betapv
+    gammapm <- prior$gammapm
+    gammapv <- prior$gammapv
+    sigmap <- prior$sigmap
+    a0b0 <- prior$a0b0
+  }
 
   ## MCMC
   nsave <- mcmc$nsave
@@ -67,6 +78,7 @@ HeterPTlm <- function(y, x, mcmc, prior, quan, method = "mean"){
   nburn <- mcmc$nburn
   ndisp <- mcmc$ndisp
   arate <- mcmc$arate
+  mcmc <- c(nburn, nskip, nsave, ndisp)
 
   ## QUAN
   quan <- quan
@@ -115,7 +127,7 @@ HeterPTlm <- function(y, x, mcmc, prior, quan, method = "mean"){
                     y = as.double(y),
                     betapm= as.double(betapm),
                     betapv = as.double(betapv),
-                    tau = as.double(tau),
+                    sigmap = as.double(sigmap),
                     betasave= as.double(betasave),
                     gammasave= as.double(gammasave),
                     gammapm = as.double(gammapm),
@@ -154,7 +166,7 @@ HeterPTlm <- function(y, x, mcmc, prior, quan, method = "mean"){
                   y = as.double(y),
                   betapm= as.double(betapm),
                   betapv = as.double(betapv),
-                  tau = as.double(tau),
+                  sigmap = as.double(sigmap),
                   betasave= as.double(betasave),
                   gammasave= as.double(gammasave),
                   gammapm = as.double(gammapm),

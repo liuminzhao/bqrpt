@@ -2,3 +2,4 @@
 code/*-ex.R
 code/*.so
 code/*.o
+/code/Rplots.pdf
