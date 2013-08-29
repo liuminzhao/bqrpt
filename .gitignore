@@ -3,3 +3,8 @@ code/*-ex.R
 code/*.so
 code/*.o
 /code/Rplots.pdf
+/results/change-age.png
+/results/change-race1.png
+/results/change-race2.png
+/results/density-res.png
+/results/hist-res.png

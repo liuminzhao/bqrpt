@@ -1,5 +1,5 @@
 ####################################################################
-##' Time-stamp: <liuminzhao 06/15/2013 17:05:33>
+##' Time-stamp: <liuminzhao 06/24/2013 14:50:44>
 ##'
 ##' 2012/03/29 wrap heterptlm.f,
 ####################################################################
@@ -29,7 +29,7 @@ HeterPTlm <- function(y, x, mcmc, prior, quan = 0.5, method = "ss"){
       } else {
         if (file.exists('~/Documents/bqrpt/code/heterptlm.so')) {
           dyn.load("~/Documents/bqrpt/code/heterptlm.so")
-        }
+        } else stop('no shared library found.')
       }
     }
   }
@@ -40,7 +40,7 @@ HeterPTlm <- function(y, x, mcmc, prior, quan = 0.5, method = "ss"){
       } else {
         if (file.exists('~/Documents/bqrpt/code/heterptlm-ss.so')) {
           dyn.load("~/Documents/bqrpt/code/heterptlm-ss.so")
-        }
+        } else stop('no shared library found.')
       }
     }
   }
@@ -55,7 +55,7 @@ HeterPTlm <- function(y, x, mcmc, prior, quan = 0.5, method = "ss"){
   if (is.null(prior$mdzero)) {mdzero <- 0}  else  mdzero <- prior$mdzero
 
   ## PRIOR
-  if (is.null(prior)){
+  if (is.null(prior$betapm)){
     betapm <- solve(t(x)%*%x)%*%t(x)%*%y
     res <- y - x%*%betapm
     betapv <- solve(t(x)%*%x)*sum(res^2)/(nrec - p)
