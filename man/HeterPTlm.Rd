@@ -6,8 +6,8 @@
 \title{Quantile Regression with Polya Tree
 for univariate outcome}
 \usage{
-  HeterPTlm(y, X, mcmc, prior, quan = 0.5, method = "ss",
-    den = FALSE)
+  HeterPTlm(y, X, mcmc, prior = NULL, quan = 0.5,
+    method = "normal", den = FALSE)
 
   \method{coef}{HeterPTlm} (mod, ...)
 

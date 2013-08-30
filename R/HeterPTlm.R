@@ -16,7 +16,7 @@
 ##' @return an object of class \code{HeterPTlm}
 ##' @author Minzhao Liu, Mike Daniels
 ##' @export
-HeterPTlm <- function(y, X, mcmc, prior, quan = 0.5, method = "ss",
+HeterPTlm <- function(y, X, mcmc, prior = NULL, quan = 0.5, method = "normal",
                       den = FALSE){
 
   ## DATA
@@ -94,11 +94,6 @@ HeterPTlm <- function(y, X, mcmc, prior, quan = 0.5, method = "ss",
   attgamma <- accgamma <- attbeta <- accbeta <- rep(0, p)
   attsigma <- attalpha <- accsigma <- accalpha <- 0
 
-  ## DEBUG
-  ## ratesave <- matrix(0, nburn/50, 2*p+2)
-  ## tunesave <- matrix(0, nburn, 2*p+2)
-  ## hetersave <- matrix(0, nburn, p)
-  ## propv <- solve(t(X)%*%X)
 #################################################
 
   ## first
@@ -194,7 +189,7 @@ HeterPTlm <- function(y, X, mcmc, prior, quan = 0.5, method = "ss",
     }
 
     ## TUNE
-    if (attgamma[1] >= 100 && iscan < nburn) {
+    if (attbeta[1] >= 100 & iscan < nburn) {
       tunegamma <- tunegamma*ifelse(accgamma/attgamma > arate,
                                     2, 0.5)
       tunebeta <- tunebeta*ifelse(accbeta/attbeta > arate,
@@ -228,11 +223,6 @@ HeterPTlm <- function(y, X, mcmc, prior, quan = 0.5, method = "ss",
     }
   }
 
-  ## DEBUG
-  ## ratesave <- matrix(foo$ratesave, nburn/50, 2*p+2)
-  ## tunesave <- matrix(foo$tunesave, nburn, 2*p+2)
-  ## hetersave <- matrix(foo$hetersave, nburn, p)
-
   ans <- list(betasave=betasave,
               gammasave=gammasave,
               sigmasave=sigmasave,
@@ -249,7 +239,8 @@ HeterPTlm <- function(y, X, mcmc, prior, quan = 0.5, method = "ss",
               y=y,
               X=X,
               ## ratesave=ratesave,
-              ## tunesave=tunesave,
+              tune = list(beta = tunebeta, gamma = tunegamma,
+                sigma = tunesigma, alpha = tunealpha),
               ## hetersave=hetersave,
               method = method
               )
