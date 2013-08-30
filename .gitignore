@@ -8,3 +8,4 @@ code/*.o
 /results/change-race2.png
 /results/density-res.png
 /results/hist-res.png
+src-*/

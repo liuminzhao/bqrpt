@@ -1,75 +1,49 @@
-####################################################################
-##' Time-stamp: <liuminzhao 06/24/2013 14:50:44>
-##'
-##' 2012/03/29 wrap heterptlm.f,
-####################################################################
-##' .. content for \description{} (no empty lines) ..
 ##' Bayesian Quantile Regression with Polya Tree
-##' for univariate outcome. Unify three methods:
-##' mean: Bayesian posterior mean
-##' median: Bayesian posterior median
-##' ss: Spike-stab prior
-##' .. content for \details{} ..
-##' @title
-##' @param y
-##' @param x
-##' @param mcmc
-##' @param prior
-##' @param quan
-##' @param method
-##' @return
+##' for univariate outcome.
+##'
+##' Fit a quantile regression for univariate response.
+##'
+##' @title Quantile Regression with Polya Tree
+##' for univariate outcome
+##' @param y [n] response
+##' @param x [n, p] covariates matrix
+##' @param mcmc mcmc parameters
+##' @param prior priors
+##' @param quan quantile requested. Multiple quantiles allowed.
+##' @param method \itemize{
+##' \item [ss] spike-slab
+##' }
+##' @return an object of class \code{HeterPTlm}
 ##' @author Minzhao Liu, Mike Daniels
-HeterPTlm <- function(y, x, mcmc, prior, quan = 0.5, method = "ss"){
-
-  ## LOAD DYN
-  if (method == 'mean' | method == 'median'){
-    if (!is.loaded('heterptlm')) {
-      if (file.exists('heterptlm.so')) {
-        dyn.load('heterptlm.so')
-      } else {
-        if (file.exists('~/Documents/bqrpt/code/heterptlm.so')) {
-          dyn.load("~/Documents/bqrpt/code/heterptlm.so")
-        } else stop('no shared library found.')
-      }
-    }
-  }
-  if (method == 'ss') {
-    if (!is.loaded('heterptlmss')) {
-      if (file.exists('heterptlm-ss.so')) {
-        dyn.load('heterptlm-ss.so')
-      } else {
-        if (file.exists('~/Documents/bqrpt/code/heterptlm-ss.so')) {
-          dyn.load("~/Documents/bqrpt/code/heterptlm-ss.so")
-        } else stop('no shared library found.')
-      }
-    }
-  }
+##' @export
+HeterPTlm <- function(y, X, mcmc, prior, quan = 0.5, method = "ss",
+                      den = FALSE){
 
   ## DATA
   nrec <- length(y)
-  p <- dim(x)[2]
+  p <- dim(X)[2]
 
   ## PT
+  ## mdzero = 0 => median fix at 0
   if (is.null(prior$maxm)) {
     maxm <- floor(log(nrec)/log(2)) }  else maxm <- prior$maxm
   if (is.null(prior$mdzero)) {mdzero <- 0}  else  mdzero <- prior$mdzero
 
   ## PRIOR
   if (is.null(prior$betapm)){
-    betapm <- solve(t(x)%*%x)%*%t(x)%*%y
-    res <- y - x%*%betapm
-    betapv <- solve(t(x)%*%x)*sum(res^2)/(nrec - p)
+    betapm <- solve(t(X)%*%X)%*%t(X)%*%y
+    res <- y - X%*%betapm
+    betapv <- diag(solve(t(X)%*%X)*sum(res^2)/(nrec - p))
     gammapm <- rep(0, p)
-    gammapv <- diag(p)*100
-    sigmap <- c(2, 1/2)
-    a0b0 <- c(1, 1)
+    gammapv <- rep(100, p)
+    a <- b <- 1
   } else {
     betapm <- prior$betapm
     betapv <- prior$betapv
     gammapm <- prior$gammapm
     gammapv <- prior$gammapv
-    sigmap <- prior$sigmap
-    a0b0 <- prior$a0b0
+    a <- prior$a
+    b <- prior$b
   }
 
   ## MCMC
@@ -81,7 +55,6 @@ HeterPTlm <- function(y, x, mcmc, prior, quan = 0.5, method = "ss"){
   mcmc <- c(nburn, nskip, nsave, ndisp)
 
   ## QUAN
-  quan <- quan
   nquan <- length(quan)
 
   ## SAVE
@@ -94,11 +67,16 @@ HeterPTlm <- function(y, x, mcmc, prior, quan = 0.5, method = "ss"){
   f <- rep(0, ngrid)
 
   ## INITIAL
-  beta <- as.vector(solve(t(x)%*%x)%*%t(x)%*%y)
+  beta <- as.vector(solve(t(X)%*%X)%*%t(X)%*%y)
   gamma <- c(1, rep(0, p-1))
-  sigma2 <- 1
+  sigma <- 1
   alpha <- 1
-  v <- as.vector((y-x%*%beta)/(x%*%gamma))
+  v <- as.vector((y-X%*%beta)/(X%*%gamma))
+
+  isave <- 0
+  skipcount <- 0
+  dispcount <- 0
+  nscan <- nburn + nskip * nsave
 
   ## new grid
 
@@ -109,157 +87,218 @@ HeterPTlm <- function(y, x, mcmc, prior, quan = 0.5, method = "ss"){
   ## WORKING
   whicho <- whichn <- rep(0, nrec)
 
+  ## TUNE
+  tunegamma <- tunebeta <- rep(0.3, p)
+  tunesigma <- 0.3
+  tunealpha <- 0.3
+  attgamma <- accgamma <- attbeta <- accbeta <- rep(0, p)
+  attsigma <- attalpha <- accsigma <- accalpha <- 0
+
   ## DEBUG
-  ratesave <- matrix(0, nburn/50, 2*p+2)
-  tunesave <- matrix(0, nburn, 2*p+2)
-#  hetersave <- rep(0, nburn)
-  hetersave <- matrix(0, nburn, p)
-  propv <- solve(t(x)%*%x)
-  ###############################################
+  ## ratesave <- matrix(0, nburn/50, 2*p+2)
+  ## tunesave <- matrix(0, nburn, 2*p+2)
+  ## hetersave <- matrix(0, nburn, p)
+  ## propv <- solve(t(X)%*%X)
+#################################################
 
-  if (!method == 'ss') {
-    foo <- .Fortran("heterptlm",
-                    maxm=as.integer(maxm),
-                    mdzero=as.integer(mdzero),
-                    nrec=as.integer(nrec),
-                    p = as.integer(p),
-                    x = as.double(x),
-                    y = as.double(y),
-                    betapm= as.double(betapm),
-                    betapv = as.double(betapv),
-                    sigmap = as.double(sigmap),
-                    betasave= as.double(betasave),
-                    gammasave= as.double(gammasave),
-                    gammapm = as.double(gammapm),
-                    gammapv=as.double(gammapv),
-                    alpha = as.double(alpha),
-                    beta = as.double(beta),
-                    gamma = as.double(gamma),
-                    nsave = as.integer(nsave),
-                    sigma2 = as.double(sigma2),
-                    v = as.double(v),
-                    a0b0=as.double(a0b0),
-                    mcmc = as.integer(mcmc),
-                    whicho=as.integer(whicho),
-                    whichn=as.integer(whichn),
-                    sigmasave=as.double(sigmasave),
-                    alphasave=as.double(alphasave),
-                    f=as.double(f),
-                    ngrid=as.integer(ngrid),
-                    grid=as.double(grid),
-                    quan=as.double(quan),
-                    quansave=as.double(quansave),
-                    nquan=as.integer(nquan),
-                    ratesave=as.double(ratesave),
-                    tunesave=as.double(tunesave),
-                    hetersave=as.double(hetersave),
-                    propv=as.double(propv),
-                    arate=as.double(arate)
-                    )
-  } else {
-      foo <- .Fortran("heterptlmss",
-                  maxm=as.integer(maxm),
-                  mdzero=as.integer(mdzero),
-                  nrec=as.integer(nrec),
-                  p = as.integer(p),
-                  x = as.double(x),
-                  y = as.double(y),
-                  betapm= as.double(betapm),
-                  betapv = as.double(betapv),
-                  sigmap = as.double(sigmap),
-                  betasave= as.double(betasave),
-                  gammasave= as.double(gammasave),
-                  gammapm = as.double(gammapm),
-                  gammapv=as.double(gammapv),
-                  alpha = as.double(alpha),
-                  beta = as.double(beta),
-                  gamma = as.double(gamma),
-                  nsave = as.integer(nsave),
-                  sigma2 = as.double(sigma2),
-                  v = as.double(v),
-                  a0b0=as.double(a0b0),
-                  mcmc = as.integer(mcmc),
-                  whicho=as.integer(whicho),
-                  whichn=as.integer(whichn),
-                  sigmasave=as.double(sigmasave),
-                  alphasave=as.double(alphasave),
-                  f=as.double(f),
-                  ngrid=as.integer(ngrid),
-                  grid=as.double(grid),
-                  quan=as.double(quan),
-                  quansave=as.double(quansave),
-                  nquan=as.integer(nquan),
-                  ratesave=as.double(ratesave),
-                  tunesave=as.double(tunesave),
-                  hetersave=as.double(hetersave),
-                  propv=as.double(propv),
-                  arate=as.double(arate)
-                  )
-    }
-    #################################################
-  betasave <- matrix(foo$betasave, nsave, p)
-  gammasave <- matrix(foo$gammasave, nsave, p)
-  quansave <- matrix(foo$quansave, nsave,nquan)
+  ## first
+  loglikeo <- ll(beta, gamma, sigma, alpha, mdzero, maxm, y, X)
 
-  if (method == 'median') {
-    coef.beta <- apply(betasave, 2, median)
-    coef.gamma <- apply(gammasave, 2, median)
-    coef.quan <- apply(quansave,2,median)
-    coef.betatau <- matrix(0, nquan, p)
-    rownames(coef.betatau) <- quan
-    for (i in 1:nquan) {
-      tmp <- betasave + gammasave*as.numeric(quansave[,i])
-      coef.betatau[i, ] <- apply(tmp, 2, median)
+  start <- proc.time()[3]
+
+  ## MCMC roll
+  for (iscan in 1:nscan) {
+    ## beta
+    for (i in 1:p){
+      attbeta[i] <- attbeta[i] + 1
+      betac <- beta
+      betac[i] <- rnorm(1, beta[i], tunebeta[i])
+      logpriorc <- dnorm(betac[i], betapm[i], betapv[i], log = T)
+      logprioro <- dnorm(beta[i], betapm[i], betapv[i], log = T)
+
+      loglikec <- ll(betac, gamma, sigma, alpha, mdzero, maxm, y, X)
+
+      ratio <- loglikec + logpriorc - loglikeo - logprioro
+
+      if (log(runif(1)) <= ratio) {
+        accbeta[i] <- accbeta[i] + 1
+        loglikeo <- loglikec
+        beta <- betac
+      }
     }
-  } else if (method == 'mean' | method == 'ss') {
-    coef.beta <- apply(betasave, 2, mean)
-    coef.gamma <- apply(gammasave, 2, mean)
-    coef.quan <- apply(quansave,2,mean)
-    coef.betatau <- matrix(0, nquan, p)
-    rownames(coef.betatau) <- quan
-    for (i in 1:nquan) {
-      tmp <- betasave + gammasave*as.numeric(quansave[,i])
-      coef.betatau[i, ] <- apply(tmp, 2, mean)
+
+    ## gamma
+    for (i in 2:p){
+      attgamma[i] = attgamma[i] + 1
+      gammac <- gamma
+      gammac[i] <- rnorm(1, gamma[i], tunegamma[i])
+      if (all(X%*%gammac > 0)) {
+        logpriorc <- dnorm(gammac[i], gammapm[i], gammapv[i], log = T)
+        logprioro <- dnorm(gamma[i], gammapm[i], gammapv[i], log = T)
+
+        loglikec <- ll(beta, gammac, sigma, alpha, mdzero, maxm, y, X)
+
+        loglikeaddc <- -sum(log(X%*%gammac))
+        loglikeaddo <- -sum(log(X%*%gamma))
+
+        ratio <- loglikec + logpriorc - loglikeo - logprioro + loglikeaddc - loglikeaddo
+
+        if (log(runif(1)) <= ratio) {
+          accgamma[i] <- accgamma[i] + 1
+          loglikeo <- loglikec
+          gamma <- gammac
+        }
+      }
+    }
+
+    ## sigma
+    attsigma <- attsigma + 1
+    theta <- log(sigma)
+    thetac <- rnorm(1, theta, tunesigma)
+    logcgkc <- -theta
+    logcgko <- -thetac
+    sigmac <- exp(thetac)
+
+    loglikec <- ll(beta, gamma, sigmac, alpha, mdzero, maxm, y, X)
+
+    logpriorc <- dgamma(sigmac, a/2, b/2, log = T)
+    logprioro <- dgamma(sigma, a/2, b/2, log = T)
+
+    ratio <- loglikec + logpriorc - loglikeo - logprioro + logcgkc - logcgko
+
+    if (log(runif(1)) <= ratio) {
+      accsigma <- accsigma + 1
+      loglikeo <- loglikec
+      sigma <- sigmac
+    }
+
+    ## alpha
+    attalpha <- attalpha + 1
+    theta <- log(alpha)
+    thetac <- rnorm(1, theta, tunealpha)
+    logcgkc <- -theta
+    logcgko <- -thetac
+    alphac <- exp(thetac)
+
+    loglikec <- ll(beta, gamma, sigma, alphac, mdzero, maxm, y, X)
+
+    logpriorc <- dgamma(alphac, a/2, b/2, log = T)
+    logprioro <- dgamma(alpha, a/2, b/2, log = T)
+
+    ratio <- loglikec + logpriorc - loglikeo - logprioro + logcgkc - logcgko
+
+    if (log(runif(1)) <= ratio) {
+      accalpha <- accalpha + 1
+      loglikeo <- loglikec
+      alpha <- alphac
+    }
+
+    ## TUNE
+    if (attgamma[1] >= 100 && iscan < nburn) {
+      tunegamma <- tunegamma*ifelse(accgamma/attgamma > arate,
+                                    2, 0.5)
+      tunebeta <- tunebeta*ifelse(accbeta/attbeta > arate,
+                                    2, 0.5)
+      tunesigma <- tunesigma*ifelse(accsigma/attsigma > arate, 2, 0.5)
+      tunealpha <- tunealpha*ifelse(accalpha/attalpha > arate, 2, 0.5)
+      attgamma <- accgamma <- attbeta <- accbeta <- rep(0, p)
+      attsigma <- accsigma <- attalpha <- accalpha <- 0
+    }
+
+    ## save
+    if (iscan > nburn) {
+      skipcount = skipcount + 1
+      if (skipcount >= nskip) {
+        isave <- isave + 1
+        dispcount <- dispcount + 1
+        betasave[isave, ] <- beta
+        gammasave[isave, ] <- gamma
+        sigmasave[isave] <- sigma
+        alphasave[isave] <- alpha
+        quansave[isave, ] <- PostQuantile(beta, gamma, sigma, alpha, mdzero, maxm, y, X, quan)
+        if (den) {
+          f <- f + PostDensity(grid, beta, gamma, sigma, alpha, mdzero, maxm, y, X)
+        }
+        skipcount <- 0
+        if (dispcount >= ndisp) {
+          dispcount <- 0
+          cat(isave, 'out of', nsave, proc.time()[3] - start, '\n')
+        }
+      }
     }
   }
 
-  coef <- list(beta=coef.beta, gamma=coef.gamma, quan=coef.quan,betatau=coef.betatau)
-
   ## DEBUG
-  ratesave <- matrix(foo$ratesave, nburn/50, 2*p+2)
-  tunesave <- matrix(foo$tunesave, nburn, 2*p+2)
-  hetersave <- matrix(foo$hetersave, nburn, p)
+  ## ratesave <- matrix(foo$ratesave, nburn/50, 2*p+2)
+  ## tunesave <- matrix(foo$tunesave, nburn, 2*p+2)
+  ## hetersave <- matrix(foo$hetersave, nburn, p)
 
-  z <- list(coef=coef,
-            betasave=betasave,
-            gammasave=gammasave,
-            quansave=quansave,
-            sigmasave=foo$sigmasave,
-            dens=foo$f,
-            grid=grid,
-            mcmc=mcmc,
-            prior=prior,
-            n=nrec,
-            p=p,
-            quan=quan,
-            y=y,
-            X=x,
-            ratesave=ratesave,
-            tunesave=tunesave,
-            hetersave=hetersave,
-            alphasave=foo$alphasave,
-            method = method
-            )
+  ans <- list(betasave=betasave,
+              gammasave=gammasave,
+              sigmasave=sigmasave,
+              alphasave=alphasave,
+              quansave=quansave,
+              dens=den,
+              f = f/nsave,
+              grid=grid,
+              mcmc=mcmc,
+              prior=prior,
+              n=nrec,
+              p=p,
+              quan=quan,
+              y=y,
+              X=X,
+              ## ratesave=ratesave,
+              ## tunesave=tunesave,
+              ## hetersave=hetersave,
+              method = method
+              )
 
-  class(z) <- "HeterPTlm"
+  class(ans) <- "HeterPTlm"
 
-  return(z)
+  return(ans)
 }
 
+##' @rdname HeterPTlm
+##' @method coef HeterPTlm
+##' @S3method coef HeterPTlm
+coef.HeterPTlm <- function(mod, ...){
+  nquan <- length(mod$quan)
+  betasave <- mod$betasave
+  gammasave <- mod$gammasave
+  quansave <- mod$quansave
+  quan <- mod$quan
 
-############################################################
-plot.HeterPTlm <- function(obj, ask=FALSE){
-  par(mfrow=c(obj$p, 2),ask=ask)
+  betaMedian <- apply(betasave, 2, median)
+  gammaMedian <- apply(gammasave, 2, median)
+  quanMedian <- apply(quansave,2,median)
+  betatauMedian <- matrix(0, nquan, mod$p)
+  rownames(betatauMedian) <- mod$quan
+  for (i in 1:nquan) {
+    tmp <- betasave + gammasave*as.numeric(quansave[,i])
+    betatauMedian[i, ] <- apply(tmp, 2, median)
+  }
+
+  betaMean <- apply(betasave, 2, mean)
+  gammaMean <- apply(gammasave, 2, mean)
+  quanMean <- apply(quansave,2,mean)
+  betatauMean <- matrix(0, nquan, mod$p)
+  rownames(betatauMean) <- mod$quan
+  for (i in 1:nquan) {
+    tmp <- betasave + gammasave*as.numeric(quansave[,i])
+    betatauMean[i, ] <- apply(tmp, 2, mean)
+  }
+
+  return(list(betaMedian = betaMedian, gammaMedian = gammaMedian,
+              quanMedian = quanMedian, betatauMedian = betatauMedian,
+              betaMean = betaMean, gammaMean = gammaMean,
+              quanMean = quanMean, betatauMean = betatauMean))
+}
+
+##' @rdname HeterPTlm
+##' @method plot HeterPTlm
+##' @S3method plot HeterPTlm
+plot.HeterPTlm <- function(obj, ...){
   for (i in 1:obj$p){
     title1 <- paste("Trace of beta" , i-1, sep=" ")
     title2 <- paste("Density of beta", i-1, sep=" ")
@@ -274,8 +313,8 @@ plot.HeterPTlm <- function(obj, ask=FALSE){
     plot(density(obj$gammasave[,i]), lwd=1.2, main=title2, xlab="values", ylab="density", col='red')
   }
 
-  title1 <- "Trace of sigma2"
-  title2 <- "Density of sigma2"
+  title1 <- "Trace of sigma"
+  title2 <- "Density of sigma"
   plot(obj$sigmasave, typ='l', main=title1, xlab="MCMC scan", ylab=" ")
   plot(density(obj$sigmasave), lwd=1.2, main=title2, xlab="values", ylab="density", col='red')
 
@@ -284,72 +323,129 @@ plot.HeterPTlm <- function(obj, ask=FALSE){
   plot(obj$alphasave, typ='l', main=title1, xlab="MCMC scan", ylab=" ")
   plot(density(obj$alphasave), lwd=1.2, main=title2, xlab="values", ylab="density", col='red')
 
-  title1 <- "Predictive Error Density"
-  plot(obj$grid, obj$dens, ylab="density", main=title1, type='l', lwd=2, xlab="values")
+  if (obj$den) {
+    title1 <- "Predictive Error Density"
+    plot(obj$grid, obj$f, ylab="density", main=title1, type='l', lwd=2, xlab="values")
+  }
 }
 
-############################################################
-summary.HeterPTlm <- function(obj){
-#  list(coef=obj$coef,n=obj$n, p=obj$p, quan=obj$quan, mcmc=obj$mcmc, prior=obj$prior)
-  list(coef=obj$coef,n=obj$n, p=obj$p, quan=obj$quan)
+##' @rdname HeterPTlm
+##' @method summary HeterPTlm
+##' @S3method summary HeterPTlm
+summary.HeterPTlm <- function(mod, ...){
+  n <- mod$n
+  quan <- mod$quan
+  p <- mod$p
+
+  cat('Number of observations: ', n, '\n')
+  cat('Quantile: ', quan, '\n')
+  cat('Quantile regression coefficients (Median): \n')
+  print(coef(mod)$betatauMedian)
+  cat('Quantile regression coefficients (Mean): \n')
+  print(coef(mod)$betatauMean)
 }
-###########################################################
-bootsummary.HeterPTlm <- function(obj, truebetatau){
-  nquan <- dim(truebetatau)[1]
-  p <- obj$p
-  quan <- obj$quan
-  runs <- obj$mcmc$nsave
 
-  betatau1 <- obj$betasave + obj$gammasave*as.numeric(obj$quansave[,1])
-  betatau2 <- obj$betasave + obj$gammasave*as.numeric(obj$quansave[,2])
-
-  betatau.coef1 <- apply(betatau1, 2, median)
-  betatau.coef2 <- apply(betatau2, 2, median)
-
-  lbd1 <- apply(betatau1, 2, function(x) quantile(x, 0.025))
-  lbd2 <- apply(betatau2, 2, function(x) quantile(x, 0.025))
-
-  ubd1 <- apply(betatau1, 2, function(x) quantile(x, 0.975))
-  ubd2 <- apply(betatau2, 2, function(x) quantile(x, 0.975))
-
-  len1 <- ubd1-lbd1
-  len2 <- ubd2-lbd2
-
-  mse1 <- betatau.coef1-truebetatau[1,]
-  mse2 <- betatau.coef2-truebetatau[2,]
-
-  for (j in 2:p)   {
-    cover1 <- prod((truebetatau[1,j]>lbd1[j] && truebetatau[1,j]<ubd1[j]))
-    cover2 <- prod((truebetatau[2,j]>lbd2[j] && truebetatau[2,j]<ubd2[j]))
-  }
-
-  return(list(beta1=betatau.coef1, lbd1=lbd1, ubd1=ubd1, length1=len1, mse1=mse1, cover1=cover1,
-              beta2=betatau.coef2, lbd2=lbd2, ubd2=ubd2, length2=len2, mse2=mse2, cover2=cover2))
-
-
+##' ll
+##'
+##' Log Likelihood given beta, gamma, sigma, alpha, mdzero
+##'
+##' @param beta
+##' @param gamma
+##' @param sigma baseline normal(0, sd = sigma)
+##' @param alpha PT parameter
+##' @param mdzero
+##' @param maxm
+##' @param y
+##' @param X
+##' @return log likelihood
+##' @author Minzhao Liu, Mike Daniels
+##' @useDynLib bqrpt
+ll <- function(beta, gamma, sigma, alpha, mdzero, maxm, y, X){
+  res <- (y - X%*%beta)/(X%*%gamma)
+  n <- length(y)
+  ans <- 0
+  whicho <- whichn <- rep(0, n)
+  ans <- .Fortran('loglik_unippt',
+                  nsubject = as.integer(n),
+                  mdzero = as.integer(mdzero),
+                  maxm = as.integer(maxm),
+                  alpha = as.double(alpha),
+                  mu = as.double(0),
+                  sigma = as.double(sigma^2),
+                  b = as.double(res),
+                  whicho=as.integer(whicho),
+                  whichn=as.integer(whichn),
+                  ans = as.double(ans))$ans
+  return(ans)
 }
-#############################################################
-Diagnose.HeterPTlm <- function(obj, ask=FALSE){
-  par(mfrow=c(4,4))
-  for (i in 1:8){
-    plot(obj$tunesave[,i],cex=0.5)
-    plot(obj$ratesave[,i],cex=0.5)
-  }
 
-  par(mfrow=c(2,2))
-  plot(obj$hetersave[,2],type='l')
-  plot(obj$hetersave[,3],type='l')
-  plot(obj$sigmasave,type='l')
-  plot(obj$alphasave,type='l')
+##' PostQuantiles
+##'
+##' calculate the posterior quantiles
+##'
+##' @param beta
+##' @param gamma
+##' @param sigma
+##' @param alpha
+##' @param mdzero
+##' @param maxm
+##' @param y
+##' @param X
+##' @return postquantile
+##' @author Minzhao Liu, Mike Daniels
+##' @useDynLib bqrpt
+PostQuantile <- function(beta, gamma, sigma, alpha, mdzero, maxm, y, X, quan){
+  n <- length(y)
+  res <- (y - X%*%beta)/(X%*%gamma)
+  nquan <- length(quan)
+  ans <- rep(0, nquan)
+  ans <- .Fortran('postquantile',
+                  n = as.integer(n),
+                  res = as.double(res),
+                  sigma2 = as.double(sigma^2),
+                  alpha = as.double(alpha),
+                  maxm = as.integer(maxm),
+                  quan = as.double(quan),
+                  ans = as.double(ans),
+                  nquan = as.integer(nquan))$ans
+  return(ans)
+}
 
-  # auto correlation
-  par(mfrow=c(2,3))
-  for (i in 1:p){
-    acf(obj$betasave[,i])
-  }
-  for (i in 2:p){
-    acf(obj$gammasave[,i])
-  }
-  acf(obj$sigmasave)
+##' PostDensity
+##'
+##' postdensity
+##'
+##' @param grid
+##' @param beta
+##' @param gamma
+##' @param sigma
+##' @param alpha
+##' @param mdzero
+##' @param maxm
+##' @param y
+##' @param X
+##' @return postdensity
+##' @author Minzhao Liu, Mike Daniels
+PostDensity <- function(grid, beta, gamma, sigma, alpha, mdzero, maxm, y, X){
+  n <- length(y)
+  res <- as.vector((y - X%*%beta)/(X%*%gamma))
+  ngrid <- length(grid)
+  like <- rep(0, ngrid)
+  whicho <- whichn <- rep(0, n)
+
+  like <- .Fortran('postdensity',
+                   grid = as.double(grid),
+                   maxm = as.integer(maxm),
+                   mdzero = as.integer(mdzero),
+                   n = as.integer(n),
+                   alpha = as.double(alpha),
+                   mu = as.double(0),
+                   sigma2 = as.double(sigma^2),
+                   res = as.double(res),
+                   whicho = as.integer(whicho),
+                   whichn = as.integer(whichn),
+                   like = as.double(like),
+                   ngrid = as.integer(ngrid))$like
+  return(like)
 
 }
