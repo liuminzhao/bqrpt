@@ -16,7 +16,8 @@
 ##' @return an object of class \code{HeterPTlm}
 ##' @author Minzhao Liu, Mike Daniels
 ##' @export
-HeterPTlm <- function(y, X, mcmc, prior = NULL, quan = 0.5, method = "normal",
+HeterPTlm <- function(y, X, mcmc, prior = NULL, quan = 0.5,
+                      method = "normal",
                       den = FALSE){
 
   ## DATA
@@ -78,6 +79,10 @@ HeterPTlm <- function(y, X, mcmc, prior = NULL, quan = 0.5, method = "normal",
   dispcount <- 0
   nscan <- nburn + nskip * nsave
 
+  ## initial for spike-slab
+  pibeta <- rbeta(p, 1, 1)
+  pigamma <- rbeta(p, 1, 1)
+
   ## new grid
 
   left <- min(v) - 0.5*sd(v)
@@ -108,8 +113,14 @@ HeterPTlm <- function(y, X, mcmc, prior = NULL, quan = 0.5, method = "normal",
       attbeta[i] <- attbeta[i] + 1
       betac <- beta
       betac[i] <- rnorm(1, beta[i], tunebeta[i])
-      logpriorc <- dnorm(betac[i], betapm[i], betapv[i], log = T)
-      logprioro <- dnorm(beta[i], betapm[i], betapv[i], log = T)
+
+      if (method == 'normal') {
+        logpriorc <- dnorm(betac[i], betapm[i], betapv[i], log = T)
+        logprioro <- dnorm(beta[i], betapm[i], betapv[i], log = T)
+      } else if (method == 'ss') {
+        logpriorc <- log((1 - pibeta[i])*dnorm(betac[i], 0, betapv[i]/1000) + pibeta[i] * dnorm(betac[i], betapm[i], betapv[i]))
+        logprioro <- log((1 - pibeta[i])*dnorm(beta[i], 0, betapv[i]/1000) + pibeta[i] * dnorm(beta[i], betapm[i], betapv[i]))
+      }
 
       loglikec <- ll(betac, gamma, sigma, alpha, mdzero, maxm, y, X)
 
@@ -128,8 +139,14 @@ HeterPTlm <- function(y, X, mcmc, prior = NULL, quan = 0.5, method = "normal",
       gammac <- gamma
       gammac[i] <- rnorm(1, gamma[i], tunegamma[i])
       if (all(X%*%gammac > 0)) {
-        logpriorc <- dnorm(gammac[i], gammapm[i], gammapv[i], log = T)
-        logprioro <- dnorm(gamma[i], gammapm[i], gammapv[i], log = T)
+
+        if (method == 'normal') {
+          logpriorc <- dnorm(gammac[i], gammapm[i], gammapv[i], log = T)
+          logprioro <- dnorm(gamma[i], gammapm[i], gammapv[i], log = T)
+        } else if (method == 'ss') {
+          logpriorc <- log((1 - pigamma[i])*dnorm(gammac[i], 0, gammapv[i]/1000) + pigamma[i]*dnorm(gammac[i], gammapm[i], gammapv[i]))
+          logprioro <- log((1 - pigamma[i])*dnorm(gamma[i], 0, gammapv[i]/1000) + pigamma[i]*dnorm(gamma[i], gammapm[i], gammapv[i]))
+        }
 
         loglikec <- ll(beta, gammac, sigma, alpha, mdzero, maxm, y, X)
 
@@ -187,6 +204,10 @@ HeterPTlm <- function(y, X, mcmc, prior = NULL, quan = 0.5, method = "normal",
       loglikeo <- loglikec
       alpha <- alphac
     }
+
+    ## pibeta and pigamma
+    pibeta <- rbeta(p, 1, 1)
+    pigamma <- rbeta(p, 1, 1)
 
     ## TUNE
     if (attbeta[1] >= 100 & iscan < nburn) {
