@@ -285,10 +285,13 @@ coef.HeterPTlm <- function(mod, ...){
   gammaMedian <- apply(gammasave, 2, median)
   quanMedian <- apply(quansave,2,median)
   betatauMedian <- matrix(0, nquan, mod$p)
+  betatauCI <- matrix(0, nquan, mod$p * 2)
   rownames(betatauMedian) <- mod$quan
+  rownames(betatauCI) <- mod$quan
   for (i in 1:nquan) {
     tmp <- betasave + gammasave*as.numeric(quansave[,i])
     betatauMedian[i, ] <- apply(tmp, 2, median)
+    betatauCI[i, ] <- as.vector(apply(tmp, 2, function(x) quantile(x, probs = c(0.025, 0.975))))
   }
 
   betaMean <- apply(betasave, 2, mean)
@@ -304,7 +307,8 @@ coef.HeterPTlm <- function(mod, ...){
   return(list(betaMedian = betaMedian, gammaMedian = gammaMedian,
               quanMedian = quanMedian, betatauMedian = betatauMedian,
               betaMean = betaMean, gammaMean = gammaMean,
-              quanMean = quanMean, betatauMean = betatauMean))
+              quanMean = quanMean, betatauMean = betatauMean,
+              betatauCI = betatauCI))
 }
 
 ##' @rdname HeterPTlm
