@@ -138,28 +138,29 @@ HeterPTlm <- function(y, X, mcmc, prior = NULL, quan = 0.5,
       attgamma[i] = attgamma[i] + 1
       gammac <- gamma
       gammac[i] <- rnorm(1, gamma[i], tunegamma[i])
-      if (all(X%*%gammac > 0)) {
+      while (any(X%*%gammac < 0)) {
+        gammac[i] <- rnorm(1, gamma[i], tunegamma[i])
+      }
 
-        if (method == 'normal') {
-          logpriorc <- dnorm(gammac[i], gammapm[i], gammapv[i], log = T)
-          logprioro <- dnorm(gamma[i], gammapm[i], gammapv[i], log = T)
-        } else if (method == 'ss') {
-          logpriorc <- log((1 - pigamma[i])*dnorm(gammac[i], 0, gammapv[i]/1000) + pigamma[i]*dnorm(gammac[i], gammapm[i], gammapv[i]))
-          logprioro <- log((1 - pigamma[i])*dnorm(gamma[i], 0, gammapv[i]/1000) + pigamma[i]*dnorm(gamma[i], gammapm[i], gammapv[i]))
-        }
+      if (method == 'normal') {
+        logpriorc <- dnorm(gammac[i], gammapm[i], gammapv[i], log = T)
+        logprioro <- dnorm(gamma[i], gammapm[i], gammapv[i], log = T)
+      } else if (method == 'ss') {
+        logpriorc <- log((1 - pigamma[i])*dnorm(gammac[i], 0, gammapv[i]/1000) + pigamma[i]*dnorm(gammac[i], gammapm[i], gammapv[i]))
+        logprioro <- log((1 - pigamma[i])*dnorm(gamma[i], 0, gammapv[i]/1000) + pigamma[i]*dnorm(gamma[i], gammapm[i], gammapv[i]))
+      }
 
-        loglikec <- ll(beta, gammac, sigma, alpha, mdzero, maxm, y, X)
+      loglikec <- ll(beta, gammac, sigma, alpha, mdzero, maxm, y, X)
 
-        loglikeaddc <- -sum(log(X%*%gammac))
-        loglikeaddo <- -sum(log(X%*%gamma))
+      loglikeaddc <- -sum(log(X%*%gammac))
+      loglikeaddo <- -sum(log(X%*%gamma))
 
-        ratio <- loglikec + logpriorc - loglikeo - logprioro + loglikeaddc - loglikeaddo
+      ratio <- loglikec + logpriorc - loglikeo - logprioro + loglikeaddc - loglikeaddo
 
-        if (log(runif(1)) <= ratio) {
-          accgamma[i] <- accgamma[i] + 1
-          loglikeo <- loglikec
-          gamma <- gammac
-        }
+      if (log(runif(1)) <= ratio) {
+        accgamma[i] <- accgamma[i] + 1
+        loglikeo <- loglikec
+        gamma <- gammac
       }
     }
 
