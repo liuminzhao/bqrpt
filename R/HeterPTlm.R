@@ -34,7 +34,7 @@ HeterPTlm <- function(y, X, mcmc, prior = NULL, quan = 0.5,
   if (is.null(prior$betapm)){
     betapm <- solve(t(X)%*%X)%*%t(X)%*%y
     res <- y - X%*%betapm
-    betapv <- diag(solve(t(X)%*%X)*sum(res^2)/(nrec - p))
+    betapv <- sqrt(diag(solve(t(X)%*%X)*sum(res^2)/(nrec - p)))
     gammapm <- rep(0, p)
     gammapv <- rep(100, p)
     a <- b <- 1
@@ -62,6 +62,7 @@ HeterPTlm <- function(y, X, mcmc, prior = NULL, quan = 0.5,
   betasave <- gammasave <- matrix(0, nsave, p)
   sigmasave <- alphasave <- rep(0, nsave)
   quansave <- matrix(0, nsave, nquan)
+  deltabetasave <- deltagammasave <- matrix(0, nsave, p)
 
   ## grid
   ngrid <- 200
@@ -82,6 +83,10 @@ HeterPTlm <- function(y, X, mcmc, prior = NULL, quan = 0.5,
   ## initial for spike-slab
   pibeta <- rbeta(p, 1, 1)
   pigamma <- rbeta(p, 1, 1)
+
+  ## deltabeta, deltagamma = 1 : from slab prior
+  deltabeta <- rep(1, p)
+  deltagamma <- rep(1, p)
 
   ## new grid
 
@@ -118,8 +123,8 @@ HeterPTlm <- function(y, X, mcmc, prior = NULL, quan = 0.5,
         logpriorc <- dnorm(betac[i], betapm[i], betapv[i], log = T)
         logprioro <- dnorm(beta[i], betapm[i], betapv[i], log = T)
       } else if (method == 'ss') {
-        logpriorc <- log((1 - pibeta[i])*dnorm(betac[i], 0, betapv[i]/1000) + pibeta[i] * dnorm(betac[i], betapm[i], betapv[i]))
-        logprioro <- log((1 - pibeta[i])*dnorm(beta[i], 0, betapv[i]/1000) + pibeta[i] * dnorm(beta[i], betapm[i], betapv[i]))
+        logpriorc <- ifelse(deltabeta[i] == 0, log((1 - pibeta[i])*dnorm(betac[i], 0, betapv[i]/1000)), log(pibeta[i]) + dnorm(betac[i], betapm[i], betapv[i], log = T))
+        logprioro <- ifelse(deltabeta[i] == 0, log((1 - pibeta[i])*dnorm(beta[i], 0, betapv[i]/1000)), log(pibeta[i]) + dnorm(beta[i], betapm[i], betapv[i], log = T))
       }
 
       loglikec <- ll(betac, gamma, sigma, alpha, mdzero, maxm, y, X)
@@ -146,8 +151,8 @@ HeterPTlm <- function(y, X, mcmc, prior = NULL, quan = 0.5,
         logpriorc <- dnorm(gammac[i], gammapm[i], gammapv[i], log = T)
         logprioro <- dnorm(gamma[i], gammapm[i], gammapv[i], log = T)
       } else if (method == 'ss') {
-        logpriorc <- log((1 - pigamma[i])*dnorm(gammac[i], 0, gammapv[i]/1000) + pigamma[i]*dnorm(gammac[i], gammapm[i], gammapv[i]))
-        logprioro <- log((1 - pigamma[i])*dnorm(gamma[i], 0, gammapv[i]/1000) + pigamma[i]*dnorm(gamma[i], gammapm[i], gammapv[i]))
+        logpriorc <- ifelse(deltagamma[i] == 0, log((1 - pigamma[i])*dnorm(gammac[i], 0, gammapv[i]/1000)), log(pigamma[i]) + dnorm(gammac[i], gammapm[i], gammapv[i], log = T))
+        logprioro <- ifelse(deltagamma[i] == 0, log((1 - pigamma[i])*dnorm(gamma[i], 0, gammapv[i]/1000)), log(pigamma[i]) + dnorm(gamma[i], gammapm[i], gammapv[i], log = T))
       }
 
       loglikec <- ll(beta, gammac, sigma, alpha, mdzero, maxm, y, X)
@@ -206,9 +211,19 @@ HeterPTlm <- function(y, X, mcmc, prior = NULL, quan = 0.5,
       alpha <- alphac
     }
 
-    ## pibeta and pigamma
-    pibeta <- rbeta(p, 1, 1)
-    pigamma <- rbeta(p, 1, 1)
+    ## deltabeta and deltagamma
+    if (method == 'ss') {
+      for (i in 1:p){
+        deltabeta[i] <- rbinom(1, 1, pibeta[i]*dnorm(beta[i], betapm[i], betapv[i])/(pibeta[i]*dnorm(beta[i], betapm[i], betapv[i]) + (1-pibeta[i])*dnorm(beta[i], 0, betapv[i]/1000)))
+      }
+      for (i in 2:p){
+        deltagamma[i] <- rbinom(1, 1, pigamma[i]*dnorm(gamma[i], gammapm[i], gammapv[i])/(pigamma[i]*dnorm(gamma[i], gammapm[i], gammapv[i]) + (1-pigamma[i])*dnorm(gamma[i], 0, gammapv[i]/1000)))
+      }
+
+      ## pibeta and pigamma
+      pibeta <- rbeta(p, 1 + deltabeta, 1 + (1 - deltabeta))
+      pigamma <- rbeta(p, 1 + deltagamma, 1 + 1 - deltagamma)
+    }
 
     ## TUNE
     if (attbeta[1] >= 100 & iscan < nburn) {
@@ -232,6 +247,8 @@ HeterPTlm <- function(y, X, mcmc, prior = NULL, quan = 0.5,
         gammasave[isave, ] <- gamma
         sigmasave[isave] <- sigma
         alphasave[isave] <- alpha
+        deltabetasave[isave, ] <- deltabeta
+        deltagammasave[isave, ] <- deltagamma
         quansave[isave, ] <- PostQuantile(beta, gamma, sigma, alpha, mdzero, maxm, y, X, quan)
         if (den) {
           f <- f + PostDensity(grid, beta, gamma, sigma, alpha, mdzero, maxm, y, X)
@@ -249,6 +266,8 @@ HeterPTlm <- function(y, X, mcmc, prior = NULL, quan = 0.5,
               gammasave=gammasave,
               sigmasave=sigmasave,
               alphasave=alphasave,
+              deltabetasave = deltabetasave,
+              deltagammasave = deltagammasave,
               quansave=quansave,
               dens=den,
               f = f/nsave,
@@ -281,6 +300,10 @@ coef.HeterPTlm <- function(mod, ...){
   gammasave <- mod$gammasave
   quansave <- mod$quansave
   quan <- mod$quan
+  nsave <- dim(betasave)[1]
+
+  deltabetaprop <- 1 - apply(mod$deltabetasave, 2, sum)/nsave
+  deltagammaprop <- 1 - apply(mod$deltagammasave, 2, sum)/nsave
 
   betaMedian <- apply(betasave, 2, median)
   gammaMedian <- apply(gammasave, 2, median)
@@ -312,7 +335,8 @@ coef.HeterPTlm <- function(mod, ...){
               quanMedian = quanMedian, betatauMedian = betatauMedian,
               betaMean = betaMean, gammaMean = gammaMean,
               quanMean = quanMean, betatauMean = betatauMean,
-              betatauCIlbd = betatauCIlbd, betatauCIubd = betatauCIubd))
+              betatauCIlbd = betatauCIlbd, betatauCIubd = betatauCIubd,
+              deltabetaprop = deltabetaprop, deltagammaprop = deltagammaprop))
 }
 
 ##' @rdname HeterPTlm
@@ -356,9 +380,10 @@ summary.HeterPTlm <- function(mod, ...){
   n <- mod$n
   quan <- mod$quan
   p <- mod$p
-
+  method <- mod$method
   cat('Number of observations: ', n, '\n')
   cat('Quantile: ', quan, '\n')
+  cat('Priors', method, '\n')
   cat('Quantile regression coefficients (Median): \n')
   print(coef(mod)$betatauMedian)
   cat('Quantile regression coefficients (Mean): \n')
