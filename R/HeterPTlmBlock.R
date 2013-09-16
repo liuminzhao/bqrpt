@@ -119,8 +119,8 @@ HeterPTlmBlock <- function(y, X, mcmc, prior = NULL, quan = 0.5,
     ## beta
     attbeta <- attbeta + 1
     betac <- beta
-##    betac <- rnorm(p, beta, tunebeta*propv)
-    betac <- rnorm(p, beta, tunebeta)
+    betac <- rnorm(p, beta, tunebeta*propv)
+    ## betac <- rnorm(p, beta, tunebeta)
 
     if (method == 'normal') {
       logpriorc <- sum(dnorm(betac, betapm, betapv, log = T))
@@ -143,7 +143,7 @@ HeterPTlmBlock <- function(y, X, mcmc, prior = NULL, quan = 0.5,
     ## gamma
     attgamma = attgamma + 1
     gammac <- gamma
-    gammac <- rnorm(p, gamma, tunegamma)
+    gammac <- rnorm(p, gamma, tunegamma*propv)
     gammac[1] <- 1
     while (any(X%*%gammac < 0)) {
       gammac <- rnorm(p, gamma, tunegamma)
