@@ -104,6 +104,7 @@ HeterPTlm <- function(y, X, mcmc, prior = NULL, quan = 0.5,
   tunealpha <- 0.3
   attgamma <- accgamma <- attbeta <- accbeta <- rep(0, p)
   attsigma <- attalpha <- accsigma <- accalpha <- 0
+  propv <- sqrt(diag(solve(t(X)%*%X)))
 
 #################################################
 
@@ -118,7 +119,7 @@ HeterPTlm <- function(y, X, mcmc, prior = NULL, quan = 0.5,
     for (i in 1:p){
       attbeta[i] <- attbeta[i] + 1
       betac <- beta
-      betac[i] <- rnorm(1, beta[i], tunebeta[i])
+      betac[i] <- rnorm(1, beta[i], tunebeta[i]*propv[i])
 
       if (method == 'normal') {
         logpriorc <- dnorm(betac[i], betapm[i], betapv[i], log = T)
@@ -143,7 +144,7 @@ HeterPTlm <- function(y, X, mcmc, prior = NULL, quan = 0.5,
     for (i in 2:p){
       attgamma[i] = attgamma[i] + 1
       gammac <- gamma
-      gammac[i] <- rnorm(1, gamma[i], tunegamma[i])
+      gammac[i] <- rnorm(1, gamma[i], tunegamma[i]*propv[i])
       while (any(X%*%gammac < 0)) {
         gammac[i] <- rnorm(1, gamma[i], tunegamma[i])
       }
@@ -228,12 +229,13 @@ HeterPTlm <- function(y, X, mcmc, prior = NULL, quan = 0.5,
 
     ## TUNE
     if (attbeta[1] >= 100 & iscan < nburn) {
+      tunerate <- exp(min(0.01, 1/sqrt(iscan/100)))
       tunegamma <- tunegamma*ifelse(accgamma/attgamma > arate,
-                                    2, 0.5)
+                                    tunerate, 1/tunerate)
       tunebeta <- tunebeta*ifelse(accbeta/attbeta > arate,
-                                    2, 0.5)
-      tunesigma <- tunesigma*ifelse(accsigma/attsigma > arate, 2, 0.5)
-      tunealpha <- tunealpha*ifelse(accalpha/attalpha > arate, 2, 0.5)
+                                    tunerate, 1/tunerate)
+      tunesigma <- tunesigma*ifelse(accsigma/attsigma > arate, tunerate, 1/tunerate)
+      tunealpha <- tunealpha*ifelse(accalpha/attalpha > arate, tunerate, 1/tunerate)
       attgamma <- accgamma <- attbeta <- accbeta <- rep(0, p)
       attsigma <- accsigma <- attalpha <- accalpha <- 0
     }
