@@ -11,7 +11,8 @@
 ##' @param prior priors
 ##' @param quan quantile requested. Multiple quantiles allowed.
 ##' @param method \itemize{
-##' \item [ss] spike-slab
+##' \item [normal] defaul method. Use normal priors
+##' \item [ss] spike-slab priors
 ##' }
 ##' @return an object of class \code{HeterPTlm}
 ##' @author Minzhao Liu, Mike Daniels

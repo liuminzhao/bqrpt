@@ -15,3 +15,4 @@ License: GPL (>= 2)
 Keyword: quantile regression
 Collate:
     'HeterPTlm.R'
+    'HeterPTlmBlock.R'

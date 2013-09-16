@@ -1,19 +1,10 @@
-\name{HeterPTlm}
-\alias{coef.HeterPTlm}
-\alias{HeterPTlm}
-\alias{plot.HeterPTlm}
-\alias{summary.HeterPTlm}
+\name{HeterPTlmBlock}
+\alias{HeterPTlmBlock}
 \title{Quantile Regression with Polya Tree
 for univariate outcome}
 \usage{
-  HeterPTlm(y, X, mcmc, prior = NULL, quan = 0.5,
+  HeterPTlmBlock(y, X, mcmc, prior = NULL, quan = 0.5,
     method = "normal", den = FALSE)
-
-  \method{coef}{HeterPTlm} (mod, ...)
-
-  \method{plot}{HeterPTlm} (obj, ...)
-
-  \method{summary}{HeterPTlm} (mod, ...)
 }
 \arguments{
   \item{y}{[n] response}
@@ -27,8 +18,8 @@ for univariate outcome}
   \item{quan}{quantile requested. Multiple quantiles
   allowed.}
 
-  \item{method}{\itemize{ \item [normal] defaul method. Use
-  normal priors \item [ss] spike-slab priors }}
+  \item{method}{\itemize{ \item [normal] normal prior \item
+  [ss] spike-slab }}
 }
 \value{
   an object of class \code{HeterPTlm}
@@ -38,7 +29,8 @@ for univariate outcome}
   univariate outcome.
 }
 \details{
-  Fit a quantile regression for univariate response.
+  Fit a quantile regression for univariate response with
+  block Gibbs sampling method
 }
 \author{
   Minzhao Liu, Mike Daniels
