@@ -54,6 +54,7 @@ HeterPTlm <- function(y, X, mcmc, prior = NULL, quan = 0.5,
   nburn <- mcmc$nburn
   ndisp <- mcmc$ndisp
   arate <- mcmc$arate
+  tuneinit <- mcmc$tuneinit
   mcmc <- c(nburn, nskip, nsave, ndisp)
 
   ## QUAN
@@ -99,9 +100,10 @@ HeterPTlm <- function(y, X, mcmc, prior = NULL, quan = 0.5,
   whicho <- whichn <- rep(0, nrec)
 
   ## TUNE
-  tunegamma <- tunebeta <- rep(0.3, p)
-  tunesigma <- 0.3
-  tunealpha <- 0.3
+  tunebeta <- tuneinit[1:p]
+  tunegamma <- tuneinit[(p+1):(p*2)]
+  tunesigma <- tuneinit[2*p+1]
+  tunealpha <- tuneinit[2*p+2]
   attgamma <- accgamma <- attbeta <- accbeta <- rep(0, p)
   attsigma <- attalpha <- accsigma <- accalpha <- 0
   propv <- sqrt(diag(solve(t(X)%*%X)))
