@@ -18,9 +18,9 @@
 ##' @return an object of class \code{HeterPTlm}
 ##' @author Minzhao Liu, Mike Daniels
 ##' @export
-HeterPTlmBlock <- function(y, X, mcmc, prior = NULL, quan = 0.5,
-                           method = "normal",
-                           den = FALSE){
+HeterPTlmMH <- function(y, X, mcmc, prior = NULL, quan = 0.5,
+                        method = "normal",
+                        den = FALSE){
 
   ## DATA
   nrec <- length(y)
@@ -55,6 +55,7 @@ HeterPTlmBlock <- function(y, X, mcmc, prior = NULL, quan = 0.5,
   nburn <- mcmc$nburn
   ndisp <- mcmc$ndisp
   arate <- mcmc$arate
+  tuneinit <- mcmc$tuneinit
   mcmc <- c(nburn, nskip, nsave, ndisp)
 
   ## QUAN
@@ -100,10 +101,11 @@ HeterPTlmBlock <- function(y, X, mcmc, prior = NULL, quan = 0.5,
   whicho <- whichn <- rep(0, nrec)
 
   ## TUNE
-  tunegamma <- tunebeta <- 0.3
-  tunesigma <- 0.3
-  tunealpha <- 0.3
-  attgamma <- accgamma <- attbeta <- accbeta <- 0
+  tunebeta <- tuneinit[1:p]
+  tunegamma <- tuneinit[(p+1):(p*2)]
+  tunesigma <- tuneinit[2*p+1]
+  tunealpha <- tuneinit[2*p+2]
+  attgamma <- accgamma <- attbeta <- accbeta <- rep(0, p)
   attsigma <- attalpha <- accsigma <- accalpha <- 0
   propv <- sqrt(diag(solve(t(X)%*%X)))
 
@@ -116,32 +118,14 @@ HeterPTlmBlock <- function(y, X, mcmc, prior = NULL, quan = 0.5,
 
   ## MCMC roll
   for (iscan in 1:nscan) {
+
     ## beta
     attbeta <- attbeta + 1
     betac <- beta
     betac <- rnorm(p, beta, tunebeta*propv)
-    ## betac <- rnorm(p, beta, tunebeta)
-
-    if (method == 'normal') {
-      logpriorc <- sum(dnorm(betac, betapm, betapv, log = T))
-      logprioro <- sum(dnorm(beta, betapm, betapv, log = T))
-    } else if (method == 'ss') {
-      logpriorc <- sum(ifelse(deltabeta == 0, log((1 - pibeta)*dnorm(betac, 0, betapv/1000)), log(pibeta) + dnorm(betac, betapm, betapv, log = T)))
-      logprioro <- sum(ifelse(deltabeta == 0, log((1 - pibeta)*dnorm(beta, 0, betapv/1000)), log(pibeta) + dnorm(beta, betapm, betapv, log = T)))
-    }
-
-    loglikec <- ll(betac, gamma, sigma, alpha, mdzero, maxm, y, X)
-
-    ratio <- loglikec + logpriorc - loglikeo - logprioro
-
-    if (log(runif(1)) <= ratio) {
-      accbeta <- accbeta + 1
-      loglikeo <- loglikec
-      beta <- betac
-    }
 
     ## gamma
-    attgamma = attgamma + 1
+    attgamma <- attgamma + 1
     gammac <- gamma
     gammac <- rnorm(p, gamma, tunegamma*propv)
     gammac[1] <- 1
@@ -150,68 +134,21 @@ HeterPTlmBlock <- function(y, X, mcmc, prior = NULL, quan = 0.5,
       gammac[1] <- 1
     }
 
-    if (method == 'normal') {
-      logpriorc <- sum(dnorm(gammac, gammapm, gammapv, log = T)) ## gammac[1] = gamma[1], so will cancel out
-      logprioro <- sum(dnorm(gamma, gammapm, gammapv, log = T))
-    } else if (method == 'ss') {
-      logpriorc <- sum(ifelse(deltagamma==0, log((1-pigamma)*dnorm(gammac,0,gammapv/1000)), log(pigamma) + dnorm(gammac, gammapm, gammapv, log = T)))
-      logprioro <- sum(ifelse(deltagamma==0,log((1-pigamma)*dnorm(gamma, 0, gammapv/1000)), log(pigamma) + dnorm(gamma, gammapm, gammapv, log = T)))
-    }
-
-    loglikec <- ll(beta, gammac, sigma, alpha, mdzero, maxm, y, X)
-
-    loglikeaddc <- -sum(log(X%*%gammac))
-    loglikeaddo <- -sum(log(X%*%gamma))
-
-    ratio <- loglikec + logpriorc - loglikeo - logprioro + loglikeaddc - loglikeaddo
-
-    if (log(runif(1)) <= ratio) {
-      accgamma <- accgamma + 1
-      loglikeo <- loglikec
-      gamma <- gammac
-    }
-
     ## sigma
     attsigma <- attsigma + 1
     theta <- log(sigma)
     thetac <- rnorm(1, theta, tunesigma)
-    logcgkc <- -theta
-    logcgko <- -thetac
+    logcgksigmac <- -theta
+    logcgksigmao <- -thetac
     sigmac <- exp(thetac)
-
-    loglikec <- ll(beta, gamma, sigmac, alpha, mdzero, maxm, y, X)
-
-    logpriorc <- dgamma(sigmac, a/2, b/2, log = T)
-    logprioro <- dgamma(sigma, a/2, b/2, log = T)
-
-    ratio <- loglikec + logpriorc - loglikeo - logprioro + logcgkc - logcgko
-
-    if (log(runif(1)) <= ratio) {
-      accsigma <- accsigma + 1
-      loglikeo <- loglikec
-      sigma <- sigmac
-    }
 
     ## alpha
     attalpha <- attalpha + 1
     theta <- log(alpha)
     thetac <- rnorm(1, theta, tunealpha)
-    logcgkc <- -theta
-    logcgko <- -thetac
+    logcgkalphac <- -theta
+    logcgkalphao <- -thetac
     alphac <- exp(thetac)
-
-    loglikec <- ll(beta, gamma, sigma, alphac, mdzero, maxm, y, X)
-
-    logpriorc <- dgamma(alphac, a/2, b/2, log = T)
-    logprioro <- dgamma(alpha, a/2, b/2, log = T)
-
-    ratio <- loglikec + logpriorc - loglikeo - logprioro + logcgkc - logcgko
-
-    if (log(runif(1)) <= ratio) {
-      accalpha <- accalpha + 1
-      loglikeo <- loglikec
-      alpha <- alphac
-    }
 
     ## deltabeta and deltagamma
     if (method == 'ss') {
@@ -225,16 +162,60 @@ HeterPTlmBlock <- function(y, X, mcmc, prior = NULL, quan = 0.5,
       pigamma <- rbeta(p, 1 + deltagamma, 1 + 1 - deltagamma)
     }
 
+    ## log likelihood for new candidate
+    loglikec <- ll(betac, gammac, sigmac, alphac, mdzero, maxm, y, X)
+
+    ## priors
+    logpriorc <- logprioro <- 0
+
+    if (method == 'normal') {
+      logpriorc <- logpriorc + sum(dnorm(betac, betapm, betapv, log = T))
+      logprioro <- logprioro + sum(dnorm(beta, betapm, betapv, log = T))
+      logpriorc <- logpriorc + sum(dnorm(gammac, gammapm, gammapv, log = T))
+      logprioro <- logprioro + sum(dnorm(gamma, gammapm, gammapv, log = T))
+
+    } else if (method == 'ss') {
+      logpriorc <- logpriorc + sum(ifelse(deltabeta == 0, log((1 - pibeta)*dnorm(betac, 0, betapv/1000)), log(pibeta) + dnorm(betac, betapm, betapv, log = T)))
+      logprioro <- logprioro + sum(ifelse(deltabeta == 0, log((1 - pibeta)*dnorm(beta, 0, betapv/1000)), log(pibeta) + dnorm(beta, betapm, betapv, log = T)))
+      logpriorc <- logpriorc + sum(ifelse(deltagamma==0, log((1-pigamma)*dnorm(gammac,0,gammapv/1000)), log(pigamma) + dnorm(gammac, gammapm, gammapv, log = T)))
+      logprioro <- logprioro + sum(ifelse(deltagamma==0,log((1-pigamma)*dnorm(gamma, 0, gammapv/1000)), log(pigamma) + dnorm(gamma, gammapm, gammapv, log = T)))
+    }
+
+    logpriorc <- logpriorc + dgamma(sigmac, a/2, b/2, log = T)
+    logprioro <- logprioro + dgamma(sigma, a/2, b/2, log = T)
+    logpriorc <- logpriorc + dgamma(alphac, a/2, b/2, log = T)
+    logprioro <- logprioro + dgamma(alpha, a/2, b/2, log = T)
+
+    ## additional likelihood for gamma
+    loglikeaddc <- -sum(log(X%*%gammac))
+    loglikeaddo <- -sum(log(X%*%gamma))
+
+    ## ratio
+    ratio <- loglikec + logpriorc - loglikeo - logprioro +
+      logcgksigmac - logcgksigmao + logcgkalphac - logcgkalphao + loglikeaddc - loglikeaddo
+
+    if (log(runif(1)) <= ratio) {
+      accbeta <- accbeta + 1
+      accgamma <- accgamma + 1
+      accsigma <- accsigma + 1
+      accalpha <- accalpha + 1
+      beta <- betac
+      gamma <- gammac
+      sigma <- sigmac
+      alpha <- alphac
+      loglikeo <- loglikec
+    }
+
     ## TUNE
-    if (attbeta >= 100 & iscan < nburn) {
+    if (attbeta[1] >= 100 & iscan < nburn) {
       tunerate <- exp(min(0.01, 1/sqrt(iscan/100)))
       tunegamma <- tunegamma*ifelse(accgamma/attgamma > arate,
                                     tunerate, 1/tunerate)
       tunebeta <- tunebeta*ifelse(accbeta/attbeta > arate,
-                                  tunerate, 1/tunerate)
+                                    tunerate, 1/tunerate)
       tunesigma <- tunesigma*ifelse(accsigma/attsigma > arate, tunerate, 1/tunerate)
       tunealpha <- tunealpha*ifelse(accalpha/attalpha > arate, tunerate, 1/tunerate)
-      attgamma <- accgamma <- attbeta <- accbeta <- 0
+      attgamma <- accgamma <- attbeta <- accbeta <- rep(0, p)
       attsigma <- accsigma <- attalpha <- accalpha <- 0
     }
 

@@ -1,5 +1,6 @@
 export(HeterPTlm)
 export(HeterPTlmBlock)
+export(HeterPTlmMH)
 S3method(coef,HeterPTlm)
 S3method(plot,HeterPTlm)
 S3method(summary,HeterPTlm)

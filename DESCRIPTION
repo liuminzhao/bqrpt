@@ -16,3 +16,4 @@ Keyword: quantile regression
 Collate:
     'HeterPTlm.R'
     'HeterPTlmBlock.R'
+    'HeterPTlmMH.R'
