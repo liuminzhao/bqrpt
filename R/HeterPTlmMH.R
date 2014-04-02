@@ -22,6 +22,8 @@ HeterPTlmMH <- function(y, X, mcmc, prior = NULL, quan = 0.5,
                         method = "normal",
                         den = FALSE){
 
+    ## Statement
+    cat("Please make sure X is scaled within [-1, 1]. \n")
   ## DATA
   nrec <- length(y)
   p <- dim(X)[2]
@@ -74,6 +76,7 @@ HeterPTlmMH <- function(y, X, mcmc, prior = NULL, quan = 0.5,
   ## INITIAL
   beta <- as.vector(solve(t(X)%*%X)%*%t(X)%*%y)
   gamma <- c(1, rep(0, p-1))
+  gammastar <- gamma
   sigma <- 1
   alpha <- 1
   v <- as.vector((y-X%*%beta)/(X%*%gamma))
@@ -126,12 +129,12 @@ HeterPTlmMH <- function(y, X, mcmc, prior = NULL, quan = 0.5,
 
     ## gamma
     attgamma <- attgamma + 1
-    gammac <- gamma
-    gammac <- rnorm(p, gamma, tunegamma*propv)
-    gammac[1] <- 1
-    while (any(X%*%gammac < 0)) {
-      gammac <- rnorm(p, gamma, tunegamma)
-      gammac[1] <- 1
+    gammastarc <- rnorm(p, gammastar, tunegamma*propv)
+    gammastarc[1] <- 1
+    if (worstcase(gammastarc) > 0) {
+        gammac <- gammastarc
+    } else {
+        gammac <- c(1, rep(0, p-1))
     }
 
     ## sigma
@@ -171,8 +174,8 @@ HeterPTlmMH <- function(y, X, mcmc, prior = NULL, quan = 0.5,
     if (method == 'normal') {
       logpriorc <- logpriorc + sum(dnorm(betac, betapm, betapv, log = T))
       logprioro <- logprioro + sum(dnorm(beta, betapm, betapv, log = T))
-      logpriorc <- logpriorc + sum(dnorm(gammac, gammapm, gammapv, log = T))
-      logprioro <- logprioro + sum(dnorm(gamma, gammapm, gammapv, log = T))
+      logpriorc <- logpriorc + sum(dnorm(gammastarc, gammapm, gammapv, log = T))
+      logprioro <- logprioro + sum(dnorm(gammastar, gammapm, gammapv, log = T))
 
     } else if (method == 'ss') {
       logpriorc <- logpriorc + sum(ifelse(deltabeta == 0, log((1 - pibeta)*dnorm(betac, 0, betapv/1000)), log(pibeta) + dnorm(betac, betapm, betapv, log = T)))
@@ -201,6 +204,7 @@ HeterPTlmMH <- function(y, X, mcmc, prior = NULL, quan = 0.5,
       accalpha <- accalpha + 1
       beta <- betac
       gamma <- gammac
+      gammastar <- gammastarc
       sigma <- sigmac
       alpha <- alphac
       loglikeo <- loglikec
@@ -271,4 +275,15 @@ HeterPTlmMH <- function(y, X, mcmc, prior = NULL, quan = 0.5,
   class(ans) <- "HeterPTlm"
 
   return(ans)
+}
+
+##' .. content for \description{} (no empty lines) ..
+##'
+##' .. content for \details{} ..
+##' @title Worst Case function
+##' @param x
+##' @return vector
+##' @author Minzhao Liu
+worstcase <- function(x){
+    return(1 - sum(abs(x[-1])))
 }

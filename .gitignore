@@ -9,3 +9,6 @@ code/*.o
 /results/density-res.png
 /results/hist-res.png
 src-*/
+/src/bqrpt.so
+/src/heterptlm.o
+/src/invcdfnorm.o
