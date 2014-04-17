@@ -9,7 +9,8 @@ Author: Minzhao Liu <liuminzhao@ufl.edu>,
     Mike Daniels <mjdaniels@austin.utexas.edu>
 Maintainer: Minzhao Liu <liuminzhao@ufl.edu>
 Depends:
-    R (>= 1.8.0)
+    R (>= 1.8.0),
+    quantreg
 Description: NA
 License: GPL (>= 2)
 Keyword: quantile regression
