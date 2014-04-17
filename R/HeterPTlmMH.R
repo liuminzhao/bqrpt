@@ -180,8 +180,8 @@ HeterPTlmMH <- function(y, X, mcmc, prior = NULL, quan = 0.5,
     } else if (method == 'ss') {
       logpriorc <- logpriorc + sum(ifelse(deltabeta == 0, log((1 - pibeta)*dnorm(betac, 0, betapv/1000)), log(pibeta) + dnorm(betac, betapm, betapv, log = T)))
       logprioro <- logprioro + sum(ifelse(deltabeta == 0, log((1 - pibeta)*dnorm(beta, 0, betapv/1000)), log(pibeta) + dnorm(beta, betapm, betapv, log = T)))
-      logpriorc <- logpriorc + sum(ifelse(deltagamma==0, log((1-pigamma)*dnorm(gammac,0,gammapv/1000)), log(pigamma) + dnorm(gammac, gammapm, gammapv, log = T)))
-      logprioro <- logprioro + sum(ifelse(deltagamma==0,log((1-pigamma)*dnorm(gamma, 0, gammapv/1000)), log(pigamma) + dnorm(gamma, gammapm, gammapv, log = T)))
+      logpriorc <- logpriorc + sum(ifelse(deltagamma==0, log((1-pigamma)*dnorm(gammastarc,0,gammapv/1000)), log(pigamma) + dnorm(gammastarc, gammapm, gammapv, log = T)))
+      logprioro <- logprioro + sum(ifelse(deltagamma==0,log((1-pigamma)*dnorm(gammastar, 0, gammapv/1000)), log(pigamma) + dnorm(gammastar, gammapm, gammapv, log = T)))
     }
 
     logpriorc <- logpriorc + dgamma(sigmac, a/2, b/2, log = T)
