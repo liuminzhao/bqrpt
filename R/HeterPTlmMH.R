@@ -39,7 +39,7 @@ HeterPTlmMH <- function(y, X, mcmc, prior = NULL, quan = 0.5,
     betapm <- solve(t(X)%*%X)%*%t(X)%*%y
     res <- y - X%*%betapm
     betapv <- sqrt(diag(solve(t(X)%*%X)*sum(res^2)/(nrec - p)))
-    tmpmod <- rq(y - 1 ~ X[, -1] - 1)
+    tmpmod <- rq(abs(res) - 1 ~ X[, -1] - 1)
     gammapm <- c(1, tmpmod$coef)
     gammapv <- c(1, summary(tmpmod, se = 'boot')$coef[, 2])
     a <- b <- 1
