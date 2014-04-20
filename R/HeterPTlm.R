@@ -301,11 +301,13 @@ HeterPTlm <- function(y, X, mcmc, prior = NULL, quan = 0.5,
 ##' @S3method coef HeterPTlm
 coef.HeterPTlm <- function(mod, ...){
   nquan <- length(mod$quan)
-  betasave <- mod$betasave
-  gammasave <- mod$gammasave
-  quansave <- mod$quansave
+  nburn <- mod$mcmc[1]
+  nsave <- mod$mcmc[3]
+
+  betasave <- mod$betasave[-(1:nburn), ]
+  gammasave <- mod$gammasave[-(1:nburn), ]
+  quansave <- mod$quansave[-(1:nburn), ]
   quan <- mod$quan
-  nsave <- dim(betasave)[1]
 
   deltabetaprop <- 1 - apply(mod$deltabetasave, 2, sum)/nsave
   deltagammaprop <- 1 - apply(mod$deltagammasave, 2, sum)/nsave

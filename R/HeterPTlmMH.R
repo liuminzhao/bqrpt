@@ -88,8 +88,8 @@ HeterPTlmMH <- function(y, X, mcmc, prior = NULL, quan = 0.5,
     nscan <- nburn + nskip * nsave
 
     ## initial for spike-slab
-    pibeta <- rbeta(p, 1, 1)
-    pigamma <- rbeta(p, 1, 1)
+    pibeta <- 0.5
+    pigamma <- 0.5
 
     ## deltabeta, deltagamma = 1 : from slab prior
     deltabeta <- rep(1, p)
@@ -100,9 +100,6 @@ HeterPTlmMH <- function(y, X, mcmc, prior = NULL, quan = 0.5,
     left <- min(v) - 0.5*sd(v)
     right <- max(v) + 0.5*sd(v)
     grid <- seq(left, right, length=ngrid)
-
-    ## WORKING
-    whicho <- whichn <- rep(0, nrec)
 
     ## TUNE
     tunebeta <- tuneinit[1:p]
@@ -150,18 +147,6 @@ HeterPTlmMH <- function(y, X, mcmc, prior = NULL, quan = 0.5,
         logcgkalphao <- 0
         alphac <- 1
 
-        ## deltabeta and deltagamma
-        if (method == 'ss') {
-            deltabeta <- rbinom(p, 1, pibeta*dnorm(beta, betapm, betapv)/(pibeta*dnorm(beta, betapm, betapv) + (1-pibeta)*dnorm(beta, 0, betapv/1000)))
-            for (i in 2:p){
-                deltagamma[i] <- rbinom(1, 1, pigamma[i]*dnorm(gamma[i], gammapm[i], gammapv[i])/(pigamma[i]*dnorm(gamma[i], gammapm[i], gammapv[i]) + (1-pigamma[i])*dnorm(gamma[i], 0, gammapv[i]/1000)))
-            }
-
-            ## pibeta and pigamma
-            pibeta <- rbeta(p, 1 + deltabeta, 1 + (1 - deltabeta))
-            pigamma <- rbeta(p, 1 + deltagamma, 1 + 1 - deltagamma)
-        }
-
         ## log likelihood for new candidate
         loglikec <- ll(betac, gammac, sigmac, alphac, mdzero, maxm, y, X)
 
@@ -175,10 +160,12 @@ HeterPTlmMH <- function(y, X, mcmc, prior = NULL, quan = 0.5,
             logprioro <- logprioro + sum(dnorm(gammastar, gammapm, gammapv, log = T))
 
         } else if (method == 'ss') {
-            logpriorc <- logpriorc + sum(ifelse(deltabeta == 0, log((1 - pibeta)*dnorm(betac, 0, betapv/1000)), log(pibeta) + dnorm(betac, betapm, betapv, log = T)))
-            logprioro <- logprioro + sum(ifelse(deltabeta == 0, log((1 - pibeta)*dnorm(beta, 0, betapv/1000)), log(pibeta) + dnorm(beta, betapm, betapv, log = T)))
-            logpriorc <- logpriorc + sum(ifelse(deltagamma==0, log((1-pigamma)*dnorm(gammastarc,0,gammapv/1000)), log(pigamma) + dnorm(gammastarc, gammapm, gammapv, log = T)))
-            logprioro <- logprioro + sum(ifelse(deltagamma==0,log((1-pigamma)*dnorm(gammastar, 0, gammapv/1000)), log(pigamma) + dnorm(gammastar, gammapm, gammapv, log = T)))
+            ## beta
+            logpriorc <- logpriorc + sum(log((1 - pibeta)*dnorm(betac, 0, betapv/10) + pibeta*dnorm(betac, betapm, betapv)))
+            logprioro <- logprioro + sum(log((1 - pibeta)*dnorm(beta, 0, betapv/10) + pibeta*dnorm(beta, betapm, betapv)))
+            ## gamma
+            logpriorc <- logpriorc + sum(log((1-pigamma)*dnorm(gammastarc,0,gammapv/10) + pigamma * dnorm(gammastarc, gammapm, gammapv)))
+            logprioro <- logprioro + sum(log((1-pigamma)*dnorm(gammastar,0,gammapv/10) + pigamma * dnorm(gammastar, gammapm, gammapv)))
         }
 
         logpriorc <- logpriorc + dgamma(sigmac, a/2, b/2, log = T)
@@ -191,8 +178,7 @@ HeterPTlmMH <- function(y, X, mcmc, prior = NULL, quan = 0.5,
         loglikeaddo <- -sum(log(X%*%gamma))
 
         ## ratio
-        ratio <- loglikec + logpriorc - loglikeo - logprioro +
-            logcgksigmac - logcgksigmao + logcgkalphac - logcgkalphao + loglikeaddc - loglikeaddo
+        ratio <- loglikec + logpriorc - loglikeo - logprioro + logcgksigmac - logcgksigmao + logcgkalphac - logcgkalphao + loglikeaddc - loglikeaddo
 
         if (log(runif(1)) <= ratio) {
             accbeta <- accbeta + 1
@@ -208,7 +194,9 @@ HeterPTlmMH <- function(y, X, mcmc, prior = NULL, quan = 0.5,
         }
 
         ## TUNE
-        if (attbeta[1] >= 100 & iscan < nburn) {
+        ## if (attbeta[1] >= 100 & iscan < nburn) {
+        ## No tune
+        if (FALSE) {
             tunerate <- exp(min(0.01, 1/sqrt(iscan/100)))
             tunegamma <- tunegamma*ifelse(accgamma/attgamma > arate,
                                           tunerate, 1/tunerate)
