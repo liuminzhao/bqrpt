@@ -304,9 +304,9 @@ coef.HeterPTlm <- function(mod, ...){
   nburn <- mod$mcmc[1]
   nsave <- mod$mcmc[3]
 
-  betasave <- mod$betasave[-(1:nburn), ]
-  gammasave <- mod$gammasave[-(1:nburn), ]
-  quansave <- mod$quansave[-(1:nburn), ]
+  betasave <- mod$betasave
+  gammasave <- mod$gammasave
+  quansave <- mod$quansave
   quan <- mod$quan
 
   deltabetaprop <- 1 - apply(mod$deltabetasave, 2, sum)/nsave
