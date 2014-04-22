@@ -309,8 +309,12 @@ coef.HeterPTlm <- function(mod, ...){
   quansave <- mod$quansave
   quan <- mod$quan
 
-  deltabetaprop <- 1 - apply(mod$deltabetasave, 2, sum)/nsave
-  deltagammaprop <- 1 - apply(mod$deltagammasave, 2, sum)/nsave
+  pibeta <- pigamma <- rep(0, mod$p)
+
+  if (mod$method == 'ss') {
+      pibeta <- apply(mod$pibetasave, 2, mean)
+      pigamma <- apply(mod$pigammasave, 2, mean)
+  }
 
   betaMedian <- apply(betasave, 2, median)
   gammaMedian <- apply(gammasave, 2, median)
@@ -343,7 +347,7 @@ coef.HeterPTlm <- function(mod, ...){
               betaMean = betaMean, gammaMean = gammaMean,
               quanMean = quanMean, betatauMean = betatauMean,
               betatauCIlbd = betatauCIlbd, betatauCIubd = betatauCIubd,
-              deltabetaprop = deltabetaprop, deltagammaprop = deltagammaprop))
+              pibeta = pibeta, pigamma = pigamma))
 }
 
 ##' @rdname HeterPTlm
@@ -373,6 +377,19 @@ plot.HeterPTlm <- function(obj, ...){
   title2 <- "Density of alpha"
   plot(obj$alphasave, typ='l', main=title1, xlab="MCMC scan", ylab=" ")
   plot(density(obj$alphasave), lwd=1.2, main=title2, xlab="values", ylab="density", col='red')
+
+  if (obj$method == "ss") {
+      for (i in 1:obj$p){
+          title1 <- paste("Trace of pibeta" , i, sep=" ")
+          title2 <- paste("Density of pibeta", i, sep=" ")
+          plot(obj$pibetasave[,i], type='l', main=title1, xlab="MCMC scan", ylab=" ")
+          plot(density(obj$pibetasave[,i]), lwd=1.2, main=title2, xlab="values", ylab="density", col='red')
+          title1 <- paste("Trace of pigamma" , i, sep=" ")
+          title2 <- paste("Density of pigamma", i, sep=" ")
+          plot(obj$pigammasave[,i], type='l', main=title1, xlab="MCMC scan", ylab=" ")
+          plot(density(obj$pigammasave[,i]), lwd=1.2, main=title2, xlab="values", ylab="density", col='red')
+      }
+  }
 
   if (obj$den) {
     title1 <- "Predictive Error Density"

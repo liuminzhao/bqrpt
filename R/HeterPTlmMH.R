@@ -68,7 +68,7 @@ HeterPTlmMH <- function(y, X, mcmc, prior = NULL, quan = 0.5,
     betasave <- gammasave <- matrix(0, nsave, p)
     sigmasave <- alphasave <- rep(0, nsave)
     quansave <- matrix(0, nsave, nquan)
-    deltabetasave <- deltagammasave <- matrix(0, nsave, p)
+    pibetasave <- pigammasave <- matrix(0, nsave, p)
 
     ## grid
     ngrid <- 200
@@ -88,8 +88,8 @@ HeterPTlmMH <- function(y, X, mcmc, prior = NULL, quan = 0.5,
     nscan <- nburn + nskip * nsave
 
     ## initial for spike-slab
-    pibeta <- 0.5
-    pigamma <- 0.5
+    pibeta <- rep(0.5, p)
+    pigamma <- rep(0.5, p)
 
     ## deltabeta, deltagamma = 1 : from slab prior
     deltabeta <- rep(1, p)
@@ -193,6 +193,14 @@ HeterPTlmMH <- function(y, X, mcmc, prior = NULL, quan = 0.5,
             loglikeo <- loglikec
         }
 
+        ## TODO: update pibeta(p) and pigamma(p)
+        if (method == 'ss'){
+            for (i in 1:p){
+                pibeta[i] <- slice(pibeta[i], beta[i], betapm[i], betapv[i])
+                pigamma[i] <- slice(pigamma[i], gammastar[i], gammapm[i], gammapv[i])
+            }
+        }
+
         ## TUNE
         ## if (attbeta[1] >= 100 & iscan < nburn) {
         ## No tune
@@ -218,8 +226,8 @@ HeterPTlmMH <- function(y, X, mcmc, prior = NULL, quan = 0.5,
                 gammasave[isave, ] <- gamma
                 sigmasave[isave] <- sigma
                 alphasave[isave] <- alpha
-                deltabetasave[isave, ] <- deltabeta
-                deltagammasave[isave, ] <- deltagamma
+                pibetasave[isave, ] <- pibeta
+                pigammasave[isave, ] <- pigamma
                 quansave[isave, ] <- PostQuantile(beta, gamma, sigma, alpha, mdzero, maxm, y, X, quan)
                 if (den) {
                     f <- f + PostDensity(grid, beta, gamma, sigma, alpha, mdzero, maxm, y, X)
@@ -237,8 +245,8 @@ HeterPTlmMH <- function(y, X, mcmc, prior = NULL, quan = 0.5,
                 gammasave=gammasave,
                 sigmasave=sigmasave,
                 alphasave=alphasave,
-                deltabetasave = deltabetasave,
-                deltagammasave = deltagammasave,
+                pibetasave = pibetasave,
+                pigammasave = pigammasave,
                 quansave=quansave,
                 dens=den,
                 f = f/nsave,
@@ -271,4 +279,48 @@ HeterPTlmMH <- function(y, X, mcmc, prior = NULL, quan = 0.5,
 ##' @author Minzhao Liu
 worstcase <- function(x){
     return(1 - sum(abs(x[-1])))
+}
+
+##' .. content for \description{} (no empty lines) ..
+##'
+##' .. content for \details{} ..
+##' @title slice sampling
+##' @param x
+##' @param betaj
+##' @param betapm
+##' @param betapv
+##' @return new slice sample
+##' @author Minzhao Liu
+slice <- function(x, betaj, betapm, betapv){
+
+    A <- dnorm(betaj, 0, betapv/10)
+    B <- dnorm(betaj, betapm, betapv)
+
+    f <- function(x){
+        x * A  + (1 - x) * B
+    }
+
+    if (is.na(f(x))) {
+        print(c(x, betaj, betapm, betapv))
+        stop()
+    }
+
+    y <- runif(1, 0, f(x))
+    xinter <- (y - B)/(A - B)
+
+    if (A - B < 0) {
+        ans <- runif(1, 0, min(1, xinter))
+        if (is.na(ans)) {
+            print(xinter)
+            stop()
+        }
+        return(ans)
+    } else {
+        ans <- runif(1, max(0, xinter), 1)
+        if (is.na(ans)) {
+            print(xinter)
+            stop()
+        }
+        return(ans)
+    }
 }
